@@ -32,28 +32,28 @@
     /* Gauges */
     .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
     .gauge-card{ background:linear-gradient(160deg,var(--purple-card),#150720); border:1px solid var(--border); border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; }
-    .gauge-title{ font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .gauge-title{ font-size:.88rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
     .gauge-wrap{ position:relative; width:100%; max-width:210px; aspect-ratio:200/140; }
     .gauge-svg{ width:100%; height:100%; overflow:visible; }
     .gauge-track{ fill:none; stroke:#ffffff12; stroke-width:14; stroke-linecap:round; }
     .gauge-fill{ fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
-    .gauge-pct{ position:absolute; left:0; right:0; top:52%; transform:translateY(-50%); text-align:center; font-size:1.7rem; font-weight:800; }
+    .gauge-pct{ position:absolute; left:0; right:0; top:52%; transform:translateY(-50%); text-align:center; font-size:2.1rem; font-weight:800; }
     .gauge-leg{ font-size:12px; font-weight:700; }
     .gauge-stats{ display:flex; gap:22px; margin-top:8px; }
     .gauge-stat{ text-align:center; }
-    .gauge-stat-l{ font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-    .gauge-stat-v{ font-size:1.15rem; font-weight:800; margin-top:1px; }
+    .gauge-stat-l{ font-size:.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .gauge-stat-v{ font-size:1.35rem; font-weight:800; margin-top:2px; }
 
-    .lbl{ font-size:.7rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:22px 0 10px; }
-    .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:12px; }
-    .card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 15px; }
+    .lbl{ font-size:.84rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:30px 0 14px; }
+    .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:14px; }
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:15px; padding:20px 22px; }
     .card.hl{ background:linear-gradient(160deg,var(--purple-dark),var(--purple-deep)); border-color:#4a2358; }
-    .card .k{ font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-    .card.hl .k{ color:#d9c2e8; }
-    .card .prev{ font-size:.66rem; color:var(--muted); margin-top:2px; }
-    .card .v{ font-size:1.4rem; font-weight:800; margin-top:7px; }
+    .card .k{ font-size:.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+    .card.hl .k{ color:#e2cff0; }
+    .card .prev{ font-size:.75rem; color:var(--muted); margin-top:3px; }
+    .card .v{ font-size:2.1rem; font-weight:800; margin-top:10px; line-height:1.05; }
     .card .v.accent{ color:var(--purple-light); } .card .v.good{ color:var(--green); }
-    .card .tax{ font-size:.66rem; color:var(--muted); margin-top:4px; }
+    .card .tax{ font-size:.75rem; color:var(--muted); margin-top:6px; }
 
     .charts2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     @media(max-width:900px){ .charts2{ grid-template-columns:1fr; } .gauges{ grid-template-columns:1fr; } }
@@ -63,9 +63,9 @@
     .chart-box.tall{ height:300px; }
 
     .twrap{ overflow-x:auto; border:1px solid var(--border); border-radius:13px; }
-    table{ width:100%; border-collapse:collapse; font-size:.79rem; }
-    th,td{ padding:10px 13px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border); }
-    th{ color:var(--muted); font-weight:600; font-size:.7rem; text-transform:uppercase; background:#1f1430; position:sticky; top:0; }
+    table{ width:100%; border-collapse:collapse; font-size:.92rem; }
+    th,td{ padding:14px 16px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border); }
+    th{ color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; background:#1f1430; position:sticky; top:0; }
     td:first-child,th:first-child{ text-align:left; max-width:320px; white-space:normal; }
     tr:last-child td{ border-bottom:none; }
     .vlink{ color:var(--purple-light); text-decoration:none; font-size:.74rem; }
@@ -299,9 +299,7 @@
       h+=`<div class="grid">`;
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100));
       h+=card('Leads', NUM(leads), 'accent', 'Meta: '+NUM(m.leads), PCT(div(leads,m.leads)*100)+' da meta');
-      h+=card('Vendas', NUM(k.vendas));
-      h+=card('Faturamento', BRL(k.faturamento), 'good');
-      h+=card('CPL (custo/lead)', BRL(cpl));
+      h+=card('Vendas (ads)', NUM(k.vendas));
       h+=card('CPA (custo/venda)', BRL(k.cpa));
       h+=`</div>`;
 
@@ -323,7 +321,7 @@
       h+=`<div class="lbl">Tráfego (Meta Ads)</div><div class="grid">`;
       h+=card('Impressões', NUM(k.impressoes))+card('Alcance', NUM(k.alcance))+card('Cliques', NUM(k.cliques))
         +card('CTR', PCT(k.ctr))+card('CPC', BRL(k.cpc))+card('CPM', BRL(k.cpm))
-        +card('Initiate Checkout', NUM(k.initiate_checkout))+card('ROAS', RS(k.roas))+card('Ticket médio', BRL(k.ticket));
+        +card('Initiate Checkout', NUM(k.initiate_checkout));
       h+=`</div>`;
 
       // Chart diário + posicionamento
@@ -349,10 +347,10 @@
       // Anúncios
       const ads=anuncios(mrows);
       h+=`<div class="lbl">Por anúncio (${ads.length})</div><div class="twrap"><table><thead><tr>
-        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>Faturamento</th><th>CPA</th><th>ROAS</th><th></th>
+        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>CPA</th><th></th>
       </tr></thead><tbody>`;
-      if(!ads.length) h+=`<tr><td colspan="11" class="empty">Sem dados no período</td></tr>`;
-      else for(const a of ads) h+=`<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.faturamento)}</td><td>${BRL(a.cpa)}</td><td>${RS(a.roas)}</td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>`:'—'}</td></tr>`;
+      if(!ads.length) h+=`<tr><td colspan="9" class="empty">Sem dados no período</td></tr>`;
+      else for(const a of ads) h+=`<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>`:'—'}</td></tr>`;
       h+=`</tbody></table></div>`;
 
       document.getElementById('body').innerHTML=h;
