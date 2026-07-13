@@ -200,7 +200,7 @@
         const org=cNum(c[3]), total=cNum(c[12]);
         series.push({ date:d, org, paceDia:cNum(c[4]), total });
         if(org>0||total>0) latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
-          vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:cNum(c[7]),
+          vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
           start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
       }
       if(latest) latest.meta = latest.falta_meta + latest.total;
