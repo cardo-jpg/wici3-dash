@@ -56,6 +56,8 @@
     .card .tax{ font-size:.75rem; color:var(--muted); margin-top:6px; }
 
     .charts2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .charts3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    @media(max-width:1000px){ .charts3{ grid-template-columns:1fr; } }
     @media(max-width:900px){ .charts2{ grid-template-columns:1fr; } .gauges{ grid-template-columns:1fr; } }
     .chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
     .chart-title{ font-size:.8rem; font-weight:700; color:var(--text); margin-bottom:12px; }
@@ -295,54 +297,47 @@
       h+=gauge('g3','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
       h+=`</div>`;
 
-      // Cards destaque
-      h+=`<div class="grid">`;
-      h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100));
-      h+=card('Leads', NUM(leads), 'accent', 'Meta: '+NUM(m.leads), PCT(div(leads,m.leads)*100)+' da meta');
-      h+=card('Vendas (ads)', NUM(k.vendas));
-      h+=card('CPA (custo/venda)', BRL(k.cpa));
-      h+=`</div>`;
-
-      // Compradores & Vendas (total do lançamento — aba MÉTRICAS)
+      // ── 1) Vendas & Compradores (o que mais importa) ──
       if(mc){
-        h+=`<div class="lbl">Compradores & Vendas (total do lançamento)</div><div class="grid">`;
+        h+=`<div class="lbl">Vendas & Compradores</div><div class="grid">`;
         h+=card('Ingressos Vendidos', NUM(mc.total), 'hl v', 'Meta: '+NUM(mc.meta), PCT(mc.pct_meta)+' da meta')
           +card('Vendas Workshop ORG', NUM(mc.vendas_org))
-          +card('START ORG', NUM(mc.start_org))+card('VIP ORG', NUM(mc.vip_org))
-          +card('START ADS', NUM(mc.start_ads))+card('VIP ADS', NUM(mc.vip_ads))
-          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))+card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip))
-          +card('Pace diário', NUM(mc.pace_diario))
-          +card('Pace médio', (mc.pace_medio||0).toLocaleString('pt-BR',{maximumFractionDigits:2})+'/dia')
+          +card('START ORG', NUM(mc.start_org))
+          +card('VIP ORG', NUM(mc.vip_org))
+          +card('START ADS', NUM(mc.start_ads))
+          +card('VIP ADS', NUM(mc.vip_ads))
+          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))
+          +card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip))
+          +card('Pace médio', (mc.pace_medio||0).toLocaleString('pt-BR',{maximumFractionDigits:1})+' /dia')
           +card('Falta p/ meta', NUM(mc.falta_meta));
         h+=`</div>`;
       }
 
-      // Tráfego
-      h+=`<div class="lbl">Tráfego (Meta Ads)</div><div class="grid">`;
-      h+=card('Impressões', NUM(k.impressoes))+card('Alcance', NUM(k.alcance))+card('Cliques', NUM(k.cliques))
-        +card('CTR', PCT(k.ctr))+card('CPC', BRL(k.cpc))+card('CPM', BRL(k.cpm))
+      // ── 2) Investimento & Tráfego (Meta Ads) ──
+      h+=`<div class="lbl">Investimento & Tráfego (Meta Ads)</div><div class="grid">`;
+      h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
+        +card('Leads', NUM(leads), 'accent', 'Meta: '+NUM(m.leads), PCT(div(leads,m.leads)*100)+' da meta')
+        +card('Vendas (ads)', NUM(k.vendas))
+        +card('CPA', BRL(k.cpa))
+        +card('Impressões', NUM(k.impressoes))
+        +card('Alcance', NUM(k.alcance))
+        +card('Cliques', NUM(k.cliques))
+        +card('CTR', PCT(k.ctr))
+        +card('CPC', BRL(k.cpc))
+        +card('CPM', BRL(k.cpm))
         +card('Initiate Checkout', NUM(k.initiate_checkout));
       h+=`</div>`;
 
-      // Chart diário + posicionamento
-      h+=`<div class="lbl">Evolução & Posicionamento</div><div class="charts2">
-        <div class="chart-card"><div class="chart-title">Leads e Investimento por Dia</div><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Origem dos Leads (UTM source)</div><div class="chart-box tall"><canvas id="cOrig"></canvas></div></div>
-      </div>`;
-      h+=`<div class="charts2" style="margin-top:14px">
-        <div class="chart-card"><div class="chart-title">Top Anúncios por Leads (utm_content)</div><div class="chart-box tall"><canvas id="cAds"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Públicos por Leads (utm_term)</div><div class="chart-box tall"><canvas id="cPub"></canvas></div></div>
-      </div>`;
+      // ── 3) Gráfico por dia (largura total) ──
+      h+=`<div class="lbl">Leads e Investimento por Dia</div>
+        <div class="chart-card"><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>`;
 
-      // Metas
-      h+=`<div class="lbl">Metas do lançamento</div><div class="grid">`;
-      h+=card('Investimento', BRL(k.investido), '', 'meta '+BRLk(m.investimento), PCT(div(k.investido,m.investimento)*100))
-        +card('Leads', NUM(leads), '', 'meta '+NUM(m.leads), PCT(div(leads,m.leads)*100))
-        +card('CPA', BRL(k.cpa), '', 'meta '+BRL(m.cpa), (k.cpa<=m.cpa?'✓ dentro':'acima'))
-        +card('CPM', BRL(k.cpm), '', 'meta '+BRL(m.cpm), (k.cpm<=m.cpm?'✓ dentro':'acima'))
-        +card('CTR', PCT(k.ctr), '', 'meta '+PCT(m.ctr), PCT(div(k.ctr,m.ctr)*100))
-        +card('Connect rate', PCT(k.connect_rate), '', 'meta '+PCT(m.connect_rate), PCT(div(k.connect_rate,m.connect_rate)*100));
-      h+=`</div>`;
+      // ── 4) Posicionamento dos Leads (UTMs) — 3 colunas ──
+      h+=`<div class="lbl">Posicionamento dos Leads (UTMs)</div><div class="charts3">
+        <div class="chart-card"><div class="chart-title">Origem</div><div class="chart-box tall"><canvas id="cOrig"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Top Anúncios</div><div class="chart-box tall"><canvas id="cAds"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Públicos</div><div class="chart-box tall"><canvas id="cPub"></canvas></div></div>
+      </div>`;
 
       // Anúncios
       const ads=anuncios(mrows);
