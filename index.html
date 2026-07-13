@@ -361,8 +361,8 @@
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Malu Meta')),
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Hire Meta')),
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Metas')).catch(()=>null),
-          gviz(UTM_MALU,'gid=0').catch(()=>null),
-          gviz(UTM_HIRE,'gid=0').catch(()=>null),
+          gviz(UTM_MALU,"gid=0&tq="+encodeURIComponent("select * where A >= date '2026-07-13'")).catch(()=>null),
+          gviz(UTM_HIRE,"gid=0&tq="+encodeURIComponent("select * where A >= date '2026-07-13'")).catch(()=>null),
         ]);
         DATA.malu=metaRows(tMalu); DATA.hire=metaRows(tHire);
         DATA.umalu=tuMalu?utmRows(tuMalu):[]; DATA.uhire=tuHire?utmRows(tuHire):[];
