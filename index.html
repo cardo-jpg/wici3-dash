@@ -106,12 +106,13 @@
     const SHEET_WICI = '1DnIF0UDbdpZ7wV09dEjIkYP8G4H47Tzi7PXOKES5gkI';
     const UTM_MALU   = '1J9USJNVbFsIuih8j_vD5zsG_iP7P_jvp8BGcxldVw9M';
     const UTM_HIRE   = '1RKBwlAGJWFZ72Us4GHU_sron19JY8XuFWRvBOtH0YDA';
+    const SHEET_METR = '1V4WEVo5A0TYZ5_1Ez4rb_RHXwd6ExneizW38hzS8YZE';   // aba MÉTRICAS (compradores/vendas)
     const START = new Date(2026, 6, 13);          // 13/07/2026 (piso dos dados)
     const EVENT = new Date(2026, 7, 15);          // 15/08/2026 (evento) — p/ meta/dia
     const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80, connect_rate:82,
       cotacao:5.16, data_inicio:'13/07/2026', data_evento:'15/08 e 16/08' };
 
-    let DATA = { malu:[], hire:[], umalu:[], uhire:[], metas:{...METAS_DEFAULT} };
+    let DATA = { malu:[], hire:[], umalu:[], uhire:[], metas:{...METAS_DEFAULT}, metricas:null };
     let profile = 'geral', presetDays = 'all';
 
     const BRL = v => (v==null||isNaN(v)) ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -191,6 +192,21 @@
       return m;
     }
 
+    // aba MÉTRICAS: DATA,WA_START,WA_VIP,VENDAS_ORG,PACE_DIA,PACE_MED,FALTA,%META,START_ORG,VIP_ORG,START_ADS,VIP_ADS,TOTAL
+    function metricasParse(table){
+      const rows=table.rows||[]; let latest=null; const series=[];
+      for(const r of rows){
+        const c=r.c||[]; const d=cDate(c[0]); if(!d) continue;
+        const org=cNum(c[3]), total=cNum(c[12]);
+        series.push({ date:d, org, paceDia:cNum(c[4]), total });
+        if(org>0||total>0) latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
+          vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:cNum(c[7]),
+          start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
+      }
+      if(latest) latest.meta = latest.falta_meta + latest.total;
+      return { latest, series };
+    }
+
     // ── Filtro por preset ──────────────────────────────────────────────────────
     function cutoff(){
       if(presetDays==='all') return START;
@@ -268,12 +284,15 @@
       const daysTotal=Math.max(1, Math.round((EVENT-START)/864e5)+1);
       const cpl=div(k.investido,leads);
 
+      const mc = DATA.metricas && DATA.metricas.latest;
+      const ingressos = mc ? mc.total : k.vendas;
+      const metaIng = mc ? mc.meta : 1800;
       let h='';
       // Gauges
       h+=`<div class="gauges">`;
-      h+=gauge('g1','Leads', leads, m.leads, NUM, NUM(Math.round(leads/daysElapsed)), NUM(Math.round(m.leads/daysTotal)));
-      h+=gauge('g2','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
-      h+=gauge('g3','Connect rate', k.connect_rate, 100, v=>PCT(v), PCT(k.connect_rate), PCT(m.connect_rate));
+      h+=gauge('g1','Ingressos Vendidos', ingressos, metaIng, NUM, mc?NUM(Math.round(mc.pace_medio)):NUM(Math.round(ingressos/daysElapsed)), NUM(Math.round(metaIng/daysTotal)));
+      h+=gauge('g2','Leads', leads, m.leads, NUM, NUM(Math.round(leads/daysElapsed)), NUM(Math.round(m.leads/daysTotal)));
+      h+=gauge('g3','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
       h+=`</div>`;
 
       // Cards destaque
@@ -285,6 +304,20 @@
       h+=card('CPL (custo/lead)', BRL(cpl));
       h+=card('CPA (custo/venda)', BRL(k.cpa));
       h+=`</div>`;
+
+      // Compradores & Vendas (total do lançamento — aba MÉTRICAS)
+      if(mc){
+        h+=`<div class="lbl">Compradores & Vendas (total do lançamento)</div><div class="grid">`;
+        h+=card('Ingressos Vendidos', NUM(mc.total), 'hl v', 'Meta: '+NUM(mc.meta), PCT(mc.pct_meta)+' da meta')
+          +card('Vendas Workshop ORG', NUM(mc.vendas_org))
+          +card('START ORG', NUM(mc.start_org))+card('VIP ORG', NUM(mc.vip_org))
+          +card('START ADS', NUM(mc.start_ads))+card('VIP ADS', NUM(mc.vip_ads))
+          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))+card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip))
+          +card('Pace diário', NUM(mc.pace_diario))
+          +card('Pace médio', (mc.pace_medio||0).toLocaleString('pt-BR',{maximumFractionDigits:2})+'/dia')
+          +card('Falta p/ meta', NUM(mc.falta_meta));
+        h+=`</div>`;
+      }
 
       // Tráfego
       h+=`<div class="lbl">Tráfego (Meta Ads)</div><div class="grid">`;
@@ -359,16 +392,18 @@
     async function loadAll(){
       document.getElementById('body').innerHTML='<div class="loading">Carregando dados da planilha…</div>';
       try{
-        const [tMalu,tHire,tMetas,tuMalu,tuHire]=await Promise.all([
+        const [tMalu,tHire,tMetas,tuMalu,tuHire,tMetr]=await Promise.all([
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Malu Meta')),
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Hire Meta')),
           gviz(SHEET_WICI,'sheet='+encodeURIComponent('Metas')).catch(()=>null),
           gviz(UTM_MALU,"gid=0&tq="+encodeURIComponent("select * where A >= date '2026-07-13'")).catch(()=>null),
           gviz(UTM_HIRE,"gid=0&tq="+encodeURIComponent("select * where A >= date '2026-07-13'")).catch(()=>null),
+          gviz(SHEET_METR,'sheet='+encodeURIComponent('MÉTRICAS')).catch(()=>null),
         ]);
         DATA.malu=metaRows(tMalu); DATA.hire=metaRows(tHire);
         DATA.umalu=tuMalu?utmRows(tuMalu):[]; DATA.uhire=tuHire?utmRows(tuHire):[];
         DATA.metas=tMetas?readMetas(tMetas):{...METAS_DEFAULT};
+        DATA.metricas=tMetr?metricasParse(tMetr):null;
         // Cost vem em US$ (conta do Meta) → converte p/ R$ pela cotação (aba Metas ou 5,16)
         const cot = DATA.metas.cotacao || 5.16;
         DATA.malu.forEach(r=>{ r.cost *= cot; });
