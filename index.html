@@ -4,55 +4,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WICI 3 · Lançamento Hire Brazil</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root{
-      --bg:#0d0916; --surface:#181022; --surface2:#1f1430; --border:#2c2038;
-      --text:#f1ecf7; --muted:#9585a8;
-      --accent:#7b2d8b; --accent-light:#b565d6; --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+      --purple:#7b2d8b; --purple-dark:#5a1e68; --purple-deep:#2d1040; --purple-card:#1e0a2e;
+      --purple-light:#a855c8; --green:#c4f135; --amber:#f59e0b; --red:#ef4444;
+      --bg:#0d0912; --surface:#181022; --border:#2c2038; --text:#f1ecf7; --muted:#9585a8;
     }
     *{ box-sizing:border-box; }
     body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
-    a{ color:inherit; }
-    .page{ max-width:1400px; margin:0 auto; padding:26px 18px 60px; }
+    .page{ max-width:1400px; margin:0 auto; padding:24px 18px 60px; }
 
-    .top{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:18px; }
-    .top h1{ font-size:1.35rem; font-weight:800; margin:0; }
-    .sub{ font-size:.82rem; color:var(--muted); margin-top:5px; }
-    .btn{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:8px 14px; font-size:.8rem; cursor:pointer; font-family:inherit; }
+    .top{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:18px; }
+    .logo{ height:54px; width:auto; display:block; }
+    .top-r{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .presets{ display:flex; background:var(--surface); border:1px solid var(--border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
+    .preset{ padding:7px 12px; font-size:.78rem; cursor:pointer; color:var(--muted); border:none; background:none; font-family:inherit; }
+    .preset.active{ background:var(--purple); color:#fff; }
+    .updated{ font-size:.72rem; color:var(--muted); }
+    .btn{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 13px; font-size:.78rem; cursor:pointer; font-family:inherit; }
     .btn:hover{ background:#ffffff12; }
-    .updated{ font-size:.72rem; color:var(--muted); margin-top:6px; }
 
     .tabs{ display:inline-flex; background:var(--surface); border:1px solid var(--border); border-radius:11px; overflow:hidden; margin-bottom:22px; }
-    .tab{ padding:10px 24px; font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted); border:none; background:none; transition:.15s; font-family:inherit; }
-    .tab.active{ background:var(--accent); color:#fff; }
+    .tab{ padding:10px 26px; font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted); border:none; background:none; font-family:inherit; }
+    .tab.active{ background:var(--purple); color:#fff; }
 
-    .lbl{ font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:24px 0 11px; }
-    .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:12px; }
+    /* Gauges */
+    .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+    .gauge-card{ background:linear-gradient(160deg,var(--purple-card),#150720); border:1px solid var(--border); border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; }
+    .gauge-title{ font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .gauge-wrap{ position:relative; width:100%; max-width:210px; aspect-ratio:200/140; }
+    .gauge-svg{ width:100%; height:100%; overflow:visible; }
+    .gauge-track{ fill:none; stroke:#ffffff12; stroke-width:14; stroke-linecap:round; }
+    .gauge-fill{ fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
+    .gauge-pct{ position:absolute; left:0; right:0; top:52%; transform:translateY(-50%); text-align:center; font-size:1.7rem; font-weight:800; }
+    .gauge-leg{ font-size:12px; font-weight:700; }
+    .gauge-stats{ display:flex; gap:22px; margin-top:8px; }
+    .gauge-stat{ text-align:center; }
+    .gauge-stat-l{ font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .gauge-stat-v{ font-size:1.15rem; font-weight:800; margin-top:1px; }
+
+    .lbl{ font-size:.7rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:22px 0 10px; }
+    .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:12px; }
     .card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 15px; }
+    .card.hl{ background:linear-gradient(160deg,var(--purple-dark),var(--purple-deep)); border-color:#4a2358; }
     .card .k{ font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-    .card .v{ font-size:1.4rem; font-weight:800; margin-top:6px; }
-    .card .v.accent{ color:var(--accent-light); }
-    .card .v.good{ color:var(--green); }
+    .card.hl .k{ color:#d9c2e8; }
+    .card .prev{ font-size:.66rem; color:var(--muted); margin-top:2px; }
+    .card .v{ font-size:1.4rem; font-weight:800; margin-top:7px; }
+    .card .v.accent{ color:var(--purple-light); } .card .v.good{ color:var(--green); }
+    .card .tax{ font-size:.66rem; color:var(--muted); margin-top:4px; }
 
-    .metas{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
-    .meta{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 16px; }
-    .meta .mtop{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-    .meta .mname{ font-size:.79rem; font-weight:700; }
-    .meta .mgoal{ font-size:.71rem; color:var(--muted); }
-    .meta .mval{ font-size:1.3rem; font-weight:800; margin:7px 0 9px; }
-    .bar{ height:8px; border-radius:6px; background:#ffffff14; overflow:hidden; }
-    .bar>i{ display:block; height:100%; border-radius:6px; background:var(--accent-light); transition:width .4s; }
-    .bar.good>i{ background:var(--green); } .bar.warn>i{ background:var(--amber); } .bar.bad>i{ background:var(--red); }
-    .meta .mpct{ font-size:.7rem; color:var(--muted); margin-top:6px; }
+    .charts2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:900px){ .charts2{ grid-template-columns:1fr; } .gauges{ grid-template-columns:1fr; } }
+    .chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .chart-title{ font-size:.8rem; font-weight:700; color:var(--text); margin-bottom:12px; }
+    .chart-box{ position:relative; }
+    .chart-box.tall{ height:300px; }
 
     .twrap{ overflow-x:auto; border:1px solid var(--border); border-radius:13px; }
-    table{ width:100%; border-collapse:collapse; font-size:.8rem; }
+    table{ width:100%; border-collapse:collapse; font-size:.79rem; }
     th,td{ padding:10px 13px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border); }
-    th{ color:var(--muted); font-weight:600; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; background:var(--surface2); position:sticky; top:0; }
-    td:first-child,th:first-child{ text-align:left; max-width:340px; white-space:normal; }
+    th{ color:var(--muted); font-weight:600; font-size:.7rem; text-transform:uppercase; background:#1f1430; position:sticky; top:0; }
+    td:first-child,th:first-child{ text-align:left; max-width:320px; white-space:normal; }
     tr:last-child td{ border-bottom:none; }
-    .vlink{ color:var(--accent-light); text-decoration:none; font-size:.75rem; }
-    .empty,.loading{ text-align:center; color:var(--muted); padding:34px; font-size:.85rem; }
+    .vlink{ color:var(--purple-light); text-decoration:none; font-size:.74rem; }
+    .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
   </style>
@@ -60,11 +77,15 @@
 <body>
   <div class="page">
     <div class="top">
-      <div>
-        <h1>🚀 WICI 3 · Lançamento Hire Brazil</h1>
-        <div class="sub" id="sub">Workshop Intensivo de Carreira Internacional</div>
-      </div>
-      <div style="text-align:right">
+      <img class="logo" src="logo-wici.png" alt="Workshop Intensivo Carreira Internacional">
+      <div class="top-r">
+        <div class="presets" id="presets">
+          <button class="preset" data-d="0" onclick="setPreset(this)">Hoje</button>
+          <button class="preset" data-d="3" onclick="setPreset(this)">3 dias</button>
+          <button class="preset" data-d="7" onclick="setPreset(this)">7 dias</button>
+          <button class="preset" data-d="14" onclick="setPreset(this)">14 dias</button>
+          <button class="preset active" data-d="all" onclick="setPreset(this)">Tudo</button>
+        </div>
         <button class="btn" onclick="loadAll()">↻ Atualizar</button>
         <div class="updated" id="updated"></div>
       </div>
@@ -72,195 +93,285 @@
 
     <div class="tabs">
       <button class="tab active" data-p="geral" onclick="setTab(this)">Geral</button>
-      <button class="tab" data-p="hire" onclick="setTab(this)">Hire</button>
       <button class="tab" data-p="malu" onclick="setTab(this)">Malu</button>
+      <button class="tab" data-p="hire" onclick="setTab(this)">Hire</button>
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
-
-    <div class="foot">Atualiza automaticamente a cada abertura · fonte: planilha de dados do lançamento</div>
+    <div class="foot">Atualiza automaticamente a cada abertura · dados a partir de 13/07 · fonte: planilhas do lançamento</div>
   </div>
 
   <script>
-    // ── Config ────────────────────────────────────────────────────────────────
-    const SHEET_ID = '1DnIF0UDbdpZ7wV09dEjIkYP8G4H47Tzi7PXOKES5gkI';
-    const TAB_MALU = 'Malu Meta', TAB_HIRE = 'Hire Meta', TAB_METAS = 'Metas';
-    // Metas do lançamento (fallback — a dash tenta ler da aba "Metas"; se falhar, usa estes)
-    const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80,
-      connect_rate:82, data_inicio:'13/07/2026', data_evento:'15/08 e 16/08', produto:'Workshop' };
+    // ── Config ───────────────────────────────────────────────────────────────
+    const SHEET_WICI = '1DnIF0UDbdpZ7wV09dEjIkYP8G4H47Tzi7PXOKES5gkI';
+    const UTM_MALU   = '1J9USJNVbFsIuih8j_vD5zsG_iP7P_jvp8BGcxldVw9M';
+    const UTM_HIRE   = '1RKBwlAGJWFZ72Us4GHU_sron19JY8XuFWRvBOtH0YDA';
+    const START = new Date(2026, 6, 13);          // 13/07/2026 (piso dos dados)
+    const EVENT = new Date(2026, 7, 15);          // 15/08/2026 (evento) — p/ meta/dia
+    const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80, connect_rate:82,
+      data_inicio:'13/07/2026', data_evento:'15/08 e 16/08' };
 
-    let DATA = { malu:[], hire:[], metas:{...METAS_DEFAULT} };
-    let profile = 'geral';
+    let DATA = { malu:[], hire:[], umalu:[], uhire:[], metas:{...METAS_DEFAULT} };
+    let profile = 'geral', presetDays = 'all';
 
-    // ── Formatters ──────────────────────────────────────────────────────────────
     const BRL = v => (v==null||isNaN(v)) ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const BRLk= v => (v==null||isNaN(v)) ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
     const NUM = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
     const PCT = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
     const RS  = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'x';
+    const div = (a,b) => b ? a/b : 0;
+    const dkey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 
     function parseBR(s){
-      if(s==null) return 0;
-      if(typeof s==='number') return s;
-      s = String(s).replace(/R\$/g,'').replace(/%/g,'').replace(/ /g,'').trim();
-      if(!s) return 0;
-      s = s.replace(/\./g,'').replace(',','.');
-      const n = parseFloat(s); return isNaN(n) ? 0 : n;
+      if(s==null) return 0; if(typeof s==='number') return s;
+      s=String(s).replace(/R\$/g,'').replace(/%/g,'').replace(/ /g,'').trim();
+      if(!s) return 0; s=s.replace(/\./g,'').replace(',','.');
+      const n=parseFloat(s); return isNaN(n)?0:n;
     }
 
     // ── gviz JSONP ────────────────────────────────────────────────────────────
-    let _seq = 0;
-    function gviz(query){
-      return new Promise((resolve, reject)=>{
-        const cb = '__gv_' + (++_seq) + '_' + Date.now();
-        const s = document.createElement('script');
-        const done = ok => { try{ delete window[cb]; }catch(e){} if(s.parentNode) s.parentNode.removeChild(s); clearTimeout(tm); };
-        const tm = setTimeout(()=>{ done(); reject(new Error('timeout ' + query)); }, 20000);
-        window[cb] = resp => { done(true); (resp && resp.table) ? resolve(resp.table) : reject(new Error('vazio ' + query)); };
-        s.onerror = ()=>{ done(); reject(new Error('rede ' + query)); };
-        s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?' + query + '&tqx=responseHandler:' + cb;
+    let _seq=0;
+    function gviz(sheetId, query){
+      return new Promise((resolve,reject)=>{
+        const cb='__gv_'+(++_seq)+'_'+Date.now();
+        const s=document.createElement('script');
+        const done=()=>{ try{delete window[cb];}catch(e){} if(s.parentNode)s.parentNode.removeChild(s); clearTimeout(tm); };
+        const tm=setTimeout(()=>{done();reject(new Error('timeout'));},25000);
+        window[cb]=r=>{ done(); (r&&r.table)?resolve(r.table):reject(new Error('vazio')); };
+        s.onerror=()=>{done();reject(new Error('rede'));};
+        s.src='https://docs.google.com/spreadsheets/d/'+sheetId+'/gviz/tq?'+query+'&tqx=responseHandler:'+cb;
         document.head.appendChild(s);
       });
     }
-    const cellNum  = c => !c ? 0 : (typeof c.v === 'number' ? c.v : parseBR(c.f != null ? c.f : c.v));
-    const cellStr  = c => !c ? '' : (c.f != null ? c.f : (c.v != null ? String(c.v) : ''));
-    const cellDate = c => {
+    const cNum = c => !c ? 0 : (typeof c.v==='number' ? c.v : parseBR(c.f!=null?c.f:c.v));
+    const cStr = c => !c ? '' : (c.f!=null?c.f:(c.v!=null?String(c.v):''));
+    const cDate= c => {
       if(!c) return null;
-      if(c.f) { const m = String(c.f).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if(m) return new Date(+m[3], +m[2]-1, +m[1]); }
-      const d = String(c.v||'').match(/Date\((\d+),(\d+),(\d+)/); if(d) return new Date(+d[1], +d[2], +d[3]);
+      const f=String(c.f||c.v||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if(f){ let y=+f[3]; if(y<100)y+=2000; return new Date(y,+f[2]-1,+f[1]); }
+      const d=String(c.v||'').match(/Date\((\d+),(\d+),(\d+)/); if(d) return new Date(+d[1],+d[2],+d[3]);
       return null;
     };
 
     function metaRows(table){
-      const out = [];
+      const out=[];
       for(const r of (table.rows||[])){
-        const c = r.c || [];
-        const d = cellDate(c[0]);
-        if(!d) continue;
-        out.push({ campanha:cellStr(c[1]), cost:cellNum(c[3]), impressions:cellNum(c[4]), reach:cellNum(c[5]),
-          clicks:cellNum(c[6]), pageview:cellNum(c[7]), ic:cellNum(c[8]), compras:cellNum(c[9]),
-          link:cellStr(c[10]), anuncio:cellStr(c[11]), faturamento:cellNum(c[12]) });
+        const c=r.c||[]; const d=cDate(c[0]); if(!d||d<START) continue;
+        out.push({ date:d, campanha:cStr(c[1]), cost:cNum(c[3]), impressions:cNum(c[4]), reach:cNum(c[5]),
+          clicks:cNum(c[6]), pageview:cNum(c[7]), ic:cNum(c[8]), compras:cNum(c[9]),
+          link:cStr(c[10]), anuncio:cStr(c[11]), faturamento:cNum(c[12]) });
       }
       return out;
     }
-
-    // Lê a aba Metas (chave|valor). gviz trata a 1a linha como header → recupero de table.cols.
+    function utmRows(table){
+      // Date, Email, utm_source, utm_campaign, utm_medium, utm_content, utm_term
+      const out=[];
+      for(const r of (table.rows||[])){
+        const c=r.c||[]; const d=cDate(c[0]); if(!d||d<START) continue;
+        out.push({ date:d, source:cStr(c[2])||'—', campaign:cStr(c[3])||'—',
+          content:cStr(c[5])||'—', term:cStr(c[6])||'—' });
+      }
+      return out;
+    }
     function readMetas(table){
-      const rows = [];
-      if(table.cols && table.cols.length) rows.push(table.cols.map(c => c.label != null ? c.label : (c.id||'')));
-      for(const r of (table.rows||[])) rows.push((r.c||[]).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
-      const m = {...METAS_DEFAULT};
+      const rows=[];
+      if(table.cols&&table.cols.length) rows.push(table.cols.map(c=>c.label!=null?c.label:(c.id||'')));
+      for(const r of (table.rows||[])) rows.push((r.c||[]).map(c=>c?(c.f!=null?c.f:(c.v!=null?String(c.v):'')):''));
+      const m={...METAS_DEFAULT};
       for(const r of rows){
-        const key = (r[0]||'').toString().trim().toLowerCase();
-        const val = r[1] != null ? r[1] : '';
-        if(key.includes('leads')){ if(parseBR(val)) m.leads = parseBR(val); if(r[8]) m.produto = String(r[8]).trim(); }
-        else if(key.includes('investimento')){ if(parseBR(val)) m.investimento = parseBR(val); if(r[4]) m.data_inicio = String(r[4]).trim(); if(r[8]) m.data_evento = String(r[8]).trim(); }
-        else if(key === 'cpa'){ if(parseBR(val)) m.cpa = parseBR(val); }
-        else if(key === 'cpm'){ if(parseBR(val)) m.cpm = parseBR(val); }
-        else if(key === 'ctr'){ if(parseBR(val)) m.ctr = parseBR(val); }
-        else if(key.includes('connect')){ if(parseBR(val)) m.connect_rate = parseBR(val); }
+        const k=(r[0]||'').toString().trim().toLowerCase(); const v=r[1]!=null?r[1]:'';
+        if(k.includes('leads')){ if(parseBR(v))m.leads=parseBR(v); }
+        else if(k.includes('investimento')){ if(parseBR(v))m.investimento=parseBR(v); if(r[4])m.data_inicio=String(r[4]).trim(); if(r[8])m.data_evento=String(r[8]).trim(); }
+        else if(k==='cpa'){ if(parseBR(v))m.cpa=parseBR(v); }
+        else if(k==='cpm'){ if(parseBR(v))m.cpm=parseBR(v); }
+        else if(k==='ctr'){ if(parseBR(v))m.ctr=parseBR(v); }
+        else if(k.includes('connect')){ if(parseBR(v))m.connect_rate=parseBR(v); }
       }
       return m;
     }
 
+    // ── Filtro por preset ──────────────────────────────────────────────────────
+    function cutoff(){
+      if(presetDays==='all') return START;
+      const t=new Date(); t.setHours(0,0,0,0);
+      const c=new Date(t); c.setDate(c.getDate()-Number(presetDays));
+      return c<START?START:c;
+    }
+    const inRange = d => d>=cutoff();
+
     // ── Aggregation ─────────────────────────────────────────────────────────────
-    const div = (a,b) => b ? a/b : 0;
-    function aggregate(rows){
+    function metaAgg(rows){
       let cost=0,imp=0,reach=0,clk=0,pv=0,ic=0,comp=0,fat=0;
-      for(const r of rows){ cost+=r.cost; imp+=r.impressions; reach+=r.reach; clk+=r.clicks; pv+=r.pageview; ic+=r.ic; comp+=r.compras; fat+=r.faturamento; }
+      for(const r of rows){ cost+=r.cost;imp+=r.impressions;reach+=r.reach;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;comp+=r.compras;fat+=r.faturamento; }
       return { investido:cost, impressoes:imp, alcance:reach, cliques:clk, pageviews:pv, initiate_checkout:ic, vendas:comp, faturamento:fat,
         ctr:div(clk,imp)*100, cpm:div(cost,imp)*1000, cpc:div(cost,clk), cpa:div(cost,comp), roas:div(fat,cost), ticket:div(fat,comp), connect_rate:div(pv,clk)*100 };
     }
+    function topBy(rows, field, n){
+      const by={}; for(const r of rows){ const k=r[field]||'—'; by[k]=(by[k]||0)+1; }
+      return Object.entries(by).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count).slice(0,n);
+    }
     function anuncios(rows){
-      const by = {};
-      for(const r of rows){
-        const key = r.anuncio || r.campanha || '(sem nome)';
-        let o = by[key];
-        if(!o) o = by[key] = { nome:key, link:r.link, cost:0, impressions:0, clicks:0, ic:0, compras:0, faturamento:0 };
-        o.cost+=r.cost; o.impressions+=r.impressions; o.clicks+=r.clicks; o.ic+=r.ic; o.compras+=r.compras; o.faturamento+=r.faturamento;
-        if(!o.link && r.link) o.link = r.link;
+      const by={};
+      for(const r of rows){ const key=r.anuncio||r.campanha||'(sem nome)'; let o=by[key];
+        if(!o) o=by[key]={nome:key,link:r.link,cost:0,impressions:0,clicks:0,ic:0,compras:0,faturamento:0};
+        o.cost+=r.cost;o.impressions+=r.impressions;o.clicks+=r.clicks;o.ic+=r.ic;o.compras+=r.compras;o.faturamento+=r.faturamento;
+        if(!o.link&&r.link)o.link=r.link;
       }
-      return Object.values(by).map(o => ({ nome:o.nome, link:o.link, investido:o.cost, impressoes:o.impressions, cliques:o.clicks,
-        initiate_checkout:o.ic, vendas:o.compras, faturamento:o.faturamento,
-        cpa:div(o.cost,o.compras), roas:div(o.faturamento,o.cost), ctr:div(o.clicks,o.impressions)*100 }))
-        .sort((a,b)=> b.investido - a.investido);
+      return Object.values(by).map(o=>({nome:o.nome,link:o.link,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
+        initiate_checkout:o.ic,vendas:o.compras,faturamento:o.faturamento,cpa:div(o.cost,o.compras),roas:div(o.faturamento,o.cost),ctr:div(o.clicks,o.impressions)*100}))
+        .sort((a,b)=>b.investido-a.investido);
+    }
+    // série diária: leads (UTM) + investido (Meta)
+    function daily(metaR, utmR){
+      const map={};
+      const get=k=>map[k]||(map[k]={leads:0,inv:0,vendas:0});
+      for(const r of utmR) get(dkey(r.date)).leads++;
+      for(const r of metaR){ const o=get(dkey(r.date)); o.inv+=r.cost; o.vendas+=r.compras; }
+      return Object.keys(map).sort().map(k=>({date:k,...map[k]}));
     }
 
     // ── Render ──────────────────────────────────────────────────────────────────
-    function card(k,v,cls){ return `<div class="card"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`; }
-    function metaCard(name, atual, meta, fmt, lowerBetter){
-      const has = meta && meta>0;
-      const pct = has ? atual/meta*100 : 0;
-      const barPct = Math.max(0, Math.min(100, pct));
-      let cls = '';
-      if(has){ cls = lowerBetter ? (atual<=meta ? 'good' : (atual<=meta*1.15 ? 'warn' : 'bad')) : (pct>=100 ? 'good' : (pct>=70 ? 'warn' : 'bad')); }
-      const txt = has ? (lowerBetter ? (atual<=meta ? '✓ dentro da meta' : 'acima da meta') : PCT(pct) + ' da meta') : '';
-      return `<div class="meta"><div class="mtop"><span class="mname">${name}</span><span class="mgoal">meta: ${meta?fmt(meta):'—'}</span></div>
-        <div class="mval">${fmt(atual)}</div><div class="bar ${cls}"><i style="width:${barPct}%"></i></div><div class="mpct">${txt}</div></div>`;
+    const ARC=298.5;
+    function gauge(id, title, atual, meta, fmt, mediaDia, metaDia){
+      const pct = meta? Math.min(100,Math.max(0,atual/meta*100)) : 0;
+      return `<div class="gauge-card"><div class="gauge-title">${title}</div>
+        <div class="gauge-wrap"><svg class="gauge-svg" viewBox="0 0 200 140">
+          <path class="gauge-track" d="M5,110 A95,95,0,0,1,195,110"/>
+          <path class="gauge-fill" d="M5,110 A95,95,0,0,1,195,110" stroke="url(#pg)"
+            stroke-dasharray="${ARC} ${ARC}" stroke-dashoffset="${ARC*(1-pct/100)}"/>
+          <defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#5a1e68"/><stop offset="100%" stop-color="#a855c8"/></linearGradient></defs>
+          <text x="5" y="132" class="gauge-leg" text-anchor="middle" fill="rgba(255,255,255,.7)">${fmt(atual)}</text>
+          <text x="195" y="132" class="gauge-leg" text-anchor="middle" fill="rgba(255,255,255,.35)">${meta?fmt(meta):'—'}</text>
+        </svg><div class="gauge-pct">${pct.toLocaleString('pt-BR',{maximumFractionDigits:1})}%</div></div>
+        <div class="gauge-stats">
+          <div class="gauge-stat"><div class="gauge-stat-l">Média/dia</div><div class="gauge-stat-v">${mediaDia}</div></div>
+          <div class="gauge-stat"><div class="gauge-stat-l">Meta/dia</div><div class="gauge-stat-v">${metaDia}</div></div>
+        </div></div>`;
     }
+    function card(k,v,cls,prev,tax){ return `<div class="card ${cls&&cls.includes('hl')?'hl':''}"><div class="k">${k}</div>${prev?`<div class="prev">${prev}</div>`:''}<div class="v ${cls||''}">${v}</div>${tax?`<div class="tax">${tax}</div>`:''}</div>`; }
+
+    let charts=[];
+    function killCharts(){ charts.forEach(c=>{try{c.destroy();}catch(e){}}); charts=[]; }
 
     function render(){
-      const rows = profile==='malu' ? DATA.malu : profile==='hire' ? DATA.hire : DATA.malu.concat(DATA.hire);
-      const k = aggregate(rows), m = DATA.metas, isGeral = profile==='geral';
-      let sub = 'Workshop Intensivo de Carreira Internacional';
-      if(m.data_inicio) sub += ' · início ' + m.data_inicio;
-      if(m.data_evento) sub += ' · evento ' + m.data_evento;
-      document.getElementById('sub').textContent = sub;
+      killCharts();
+      const mrows = (profile==='malu'?DATA.malu:profile==='hire'?DATA.hire:DATA.malu.concat(DATA.hire)).filter(r=>inRange(r.date));
+      const urows = (profile==='malu'?DATA.umalu:profile==='hire'?DATA.uhire:DATA.umalu.concat(DATA.uhire)).filter(r=>inRange(r.date));
+      const k=metaAgg(mrows), m=DATA.metas;
+      const leads=urows.length;
 
-      let h = '';
-      h += `<div class="lbl">Resultado — ${profile.toUpperCase()}</div><div class="grid">`;
-      h += card('Investido', BRL(k.investido), 'accent') + card('Vendas', NUM(k.vendas)) + card('Faturamento', BRL(k.faturamento), 'good')
-         + card('ROAS', RS(k.roas)) + card('CPA', BRL(k.cpa)) + card('Ticket médio', BRL(k.ticket));
-      h += `</div>`;
+      // dias
+      const today=new Date(); today.setHours(0,0,0,0);
+      const daysElapsed=Math.max(1, Math.round((today-START)/864e5)+1);
+      const daysTotal=Math.max(1, Math.round((EVENT-START)/864e5)+1);
+      const cpl=div(k.investido,leads);
 
-      h += `<div class="lbl">Funil & Tráfego</div><div class="grid">`;
-      h += card('Impressões', NUM(k.impressoes)) + card('Alcance', NUM(k.alcance)) + card('Cliques', NUM(k.cliques))
-         + card('CTR', PCT(k.ctr)) + card('CPC', BRL(k.cpc)) + card('CPM', BRL(k.cpm))
-         + card('Page views', NUM(k.pageviews)) + card('Initiate Checkout', NUM(k.initiate_checkout)) + card('Connect rate', PCT(k.connect_rate));
-      h += `</div>`;
+      let h='';
+      // Gauges
+      h+=`<div class="gauges">`;
+      h+=gauge('g1','Leads', leads, m.leads, NUM, NUM(Math.round(leads/daysElapsed)), NUM(Math.round(m.leads/daysTotal)));
+      h+=gauge('g2','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
+      h+=gauge('g3','Connect rate', k.connect_rate, 100, v=>PCT(v), PCT(k.connect_rate), PCT(m.connect_rate));
+      h+=`</div>`;
 
-      h += `<div class="lbl">Metas do lançamento${isGeral?'':' (total do lançamento)'}</div><div class="metas">`;
-      h += metaCard('Investimento', k.investido, m.investimento, BRL, false)
-         + metaCard('Leads (Init. Checkout)', k.initiate_checkout, m.leads, NUM, false)
-         + metaCard('CPA', k.cpa, m.cpa, BRL, true)
-         + metaCard('CPM', k.cpm, m.cpm, BRL, true)
-         + metaCard('CTR', k.ctr, m.ctr, PCT, false)
-         + metaCard('Connect rate', k.connect_rate, m.connect_rate, PCT, false);
-      h += `</div>`;
+      // Cards destaque
+      h+=`<div class="grid">`;
+      h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100));
+      h+=card('Leads', NUM(leads), 'accent', 'Meta: '+NUM(m.leads), PCT(div(leads,m.leads)*100)+' da meta');
+      h+=card('Vendas', NUM(k.vendas));
+      h+=card('Faturamento', BRL(k.faturamento), 'good');
+      h+=card('CPL (custo/lead)', BRL(cpl));
+      h+=card('CPA (custo/venda)', BRL(k.cpa));
+      h+=`</div>`;
 
-      const ads = anuncios(rows);
-      h += `<div class="lbl">Por anúncio (${ads.length})</div><div class="twrap"><table><thead><tr>
+      // Tráfego
+      h+=`<div class="lbl">Tráfego (Meta Ads)</div><div class="grid">`;
+      h+=card('Impressões', NUM(k.impressoes))+card('Alcance', NUM(k.alcance))+card('Cliques', NUM(k.cliques))
+        +card('CTR', PCT(k.ctr))+card('CPC', BRL(k.cpc))+card('CPM', BRL(k.cpm))
+        +card('Initiate Checkout', NUM(k.initiate_checkout))+card('ROAS', RS(k.roas))+card('Ticket médio', BRL(k.ticket));
+      h+=`</div>`;
+
+      // Chart diário + posicionamento
+      h+=`<div class="lbl">Evolução & Posicionamento</div><div class="charts2">
+        <div class="chart-card"><div class="chart-title">Leads e Investimento por Dia</div><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Origem dos Leads (UTM source)</div><div class="chart-box tall"><canvas id="cOrig"></canvas></div></div>
+      </div>`;
+      h+=`<div class="charts2" style="margin-top:14px">
+        <div class="chart-card"><div class="chart-title">Top Anúncios por Leads (utm_content)</div><div class="chart-box tall"><canvas id="cAds"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Públicos por Leads (utm_term)</div><div class="chart-box tall"><canvas id="cPub"></canvas></div></div>
+      </div>`;
+
+      // Metas
+      h+=`<div class="lbl">Metas do lançamento</div><div class="grid">`;
+      h+=card('Investimento', BRL(k.investido), '', 'meta '+BRLk(m.investimento), PCT(div(k.investido,m.investimento)*100))
+        +card('Leads', NUM(leads), '', 'meta '+NUM(m.leads), PCT(div(leads,m.leads)*100))
+        +card('CPA', BRL(k.cpa), '', 'meta '+BRL(m.cpa), (k.cpa<=m.cpa?'✓ dentro':'acima'))
+        +card('CPM', BRL(k.cpm), '', 'meta '+BRL(m.cpm), (k.cpm<=m.cpm?'✓ dentro':'acima'))
+        +card('CTR', PCT(k.ctr), '', 'meta '+PCT(m.ctr), PCT(div(k.ctr,m.ctr)*100))
+        +card('Connect rate', PCT(k.connect_rate), '', 'meta '+PCT(m.connect_rate), PCT(div(k.connect_rate,m.connect_rate)*100));
+      h+=`</div>`;
+
+      // Anúncios
+      const ads=anuncios(mrows);
+      h+=`<div class="lbl">Por anúncio (${ads.length})</div><div class="twrap"><table><thead><tr>
         <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>Faturamento</th><th>CPA</th><th>ROAS</th><th></th>
       </tr></thead><tbody>`;
-      if(!ads.length){ h += `<tr><td colspan="11" class="empty">Sem dados</td></tr>`; }
-      else for(const a of ads){
-        h += `<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td>
-          <td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.faturamento)}</td><td>${BRL(a.cpa)}</td><td>${RS(a.roas)}</td>
-          <td>${a.link ? `<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>` : '—'}</td></tr>`;
-      }
-      h += `</tbody></table></div>`;
-      document.getElementById('body').innerHTML = h;
-      document.getElementById('updated').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      if(!ads.length) h+=`<tr><td colspan="11" class="empty">Sem dados no período</td></tr>`;
+      else for(const a of ads) h+=`<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.faturamento)}</td><td>${BRL(a.cpa)}</td><td>${RS(a.roas)}</td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>`:'—'}</td></tr>`;
+      h+=`</tbody></table></div>`;
+
+      document.getElementById('body').innerHTML=h;
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+      // Charts
+      const dseries=daily(mrows,urows);
+      const dlabels=dseries.map(d=>{const[y,mo,da]=d.date.split('-');return da+'/'+mo;});
+      charts.push(new Chart(document.getElementById('cDia'),{
+        data:{ labels:dlabels, datasets:[
+          { type:'bar', label:'Leads', data:dseries.map(d=>d.leads), backgroundColor:'#a855c8bb', borderRadius:4, yAxisID:'y' },
+          { type:'line', label:'Investido', data:dseries.map(d=>d.inv), borderColor:'#f59e0b', backgroundColor:'#f59e0b22', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y1' },
+        ]},
+        options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+          plugins:{ legend:{labels:{color:'#ccc',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label==='Investido'?` Investido: `+BRL(c.parsed.y):` Leads: ${c.parsed.y}`}} },
+          scales:{ x:{grid:{color:'#ffffff0a'},ticks:{color:'#888',font:{size:11}}}, y:{grid:{color:'#ffffff0a'},ticks:{color:'#888'},beginAtZero:true},
+            y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
+      }));
+      hbar('cOrig', topBy(urows,'source',8));
+      hbar('cAds',  topBy(urows,'content',8));
+      hbar('cPub',  topBy(urows,'term',8));
     }
 
-    function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); profile = el.dataset.p; render(); }
+    function hbar(id, items){
+      const el=document.getElementById(id); if(!el) return;
+      const valPlugin={ id:'v'+id, afterDatasetsDraw(ch){ const c=ch.ctx; c.save(); ch.getDatasetMeta(0).data.forEach((bar,i)=>{ const v=ch.data.datasets[0].data[i]; c.fillStyle='rgba(255,255,255,.85)'; c.font='600 12px system-ui'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(v, bar.x+6, bar.y); }); c.restore(); } };
+      charts.push(new Chart(el,{ type:'bar', data:{ labels:items.map(i=>i.label.length>26?i.label.slice(0,25)+'…':i.label), datasets:[{ data:items.map(i=>i.count), backgroundColor:'#a855c8bb', borderRadius:4, barThickness:20 }] },
+        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x+' leads'}}},
+          scales:{ x:{display:false,beginAtZero:true}, y:{grid:{display:false},ticks:{color:'#ccc',font:{size:12}}} }, layout:{padding:{right:34}} },
+        plugins:[valPlugin] }));
+    }
+
+    function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); profile=el.dataset.p; render(); }
+    function setPreset(el){ document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active')); el.classList.add('active'); presetDays=el.dataset.d; render(); }
 
     async function loadAll(){
-      document.getElementById('body').innerHTML = '<div class="loading">Carregando dados da planilha…</div>';
+      document.getElementById('body').innerHTML='<div class="loading">Carregando dados da planilha…</div>';
       try{
-        const [tMalu, tHire, tMetas] = await Promise.all([
-          gviz('sheet=' + encodeURIComponent(TAB_MALU)),
-          gviz('sheet=' + encodeURIComponent(TAB_HIRE)),
-          gviz('sheet=' + encodeURIComponent(TAB_METAS)).catch(()=>null),
+        const [tMalu,tHire,tMetas,tuMalu,tuHire]=await Promise.all([
+          gviz(SHEET_WICI,'sheet='+encodeURIComponent('Malu Meta')),
+          gviz(SHEET_WICI,'sheet='+encodeURIComponent('Hire Meta')),
+          gviz(SHEET_WICI,'sheet='+encodeURIComponent('Metas')).catch(()=>null),
+          gviz(UTM_MALU,'gid=0').catch(()=>null),
+          gviz(UTM_HIRE,'gid=0').catch(()=>null),
         ]);
-        DATA.malu = metaRows(tMalu);
-        DATA.hire = metaRows(tHire);
-        DATA.metas = tMetas ? readMetas(tMetas) : {...METAS_DEFAULT};
+        DATA.malu=metaRows(tMalu); DATA.hire=metaRows(tHire);
+        DATA.umalu=tuMalu?utmRows(tuMalu):[]; DATA.uhire=tuHire?utmRows(tuHire):[];
+        DATA.metas=tMetas?readMetas(tMetas):{...METAS_DEFAULT};
         render();
       }catch(e){
-        document.getElementById('body').innerHTML = '<div class="empty err">Erro ao carregar a planilha: ' + e.message + '</div>';
+        document.getElementById('body').innerHTML='<div class="empty err">Erro ao carregar: '+e.message+'</div>';
       }
     }
-
     loadAll();
   </script>
 </body>
