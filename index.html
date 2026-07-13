@@ -7,17 +7,26 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root{
-      --purple:#7b2d8b; --purple-dark:#5a1e68; --purple-deep:#2d1040; --purple-card:#1e0a2e;
-      --purple-light:#a855c8; --green:#c4f135; --amber:#f59e0b; --red:#ef4444;
-      --bg:#0d0912; --surface:#181022; --border:#2c2038; --text:#f1ecf7; --muted:#9585a8;
+      --purple:#8b3dab; --purple-dark:#6a2585; --purple-deep:#2a0f42; --purple-card:#1e0a2e;
+      --purple-light:#c07be0; --amber:#f59e0b; --red:#ef4444; --good:#c898ea;
+      --bg:#0a0710; --surface:#161022; --border:#2a2038; --text:#f3eefa; --muted:#9a8bb0;
     }
     *{ box-sizing:border-box; }
-    body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+    body{ margin:0; color:var(--text); min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(1100px 560px at 10% -8%, rgba(139,61,171,.32), transparent 62%),
+        radial-gradient(900px 500px at 100% 2%, rgba(120,80,210,.16), transparent 55%),
+        radial-gradient(800px 500px at 50% 120%, rgba(139,61,171,.14), transparent 60%),
+        #0a0710;
+      background-attachment:fixed; }
     .page{ max-width:1400px; margin:0 auto; padding:24px 18px 60px; }
 
     .top{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:18px; }
     .logo{ height:54px; width:auto; display:block; }
     .top-r{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .live{ display:inline-flex; align-items:center; gap:7px; font-size:.72rem; font-weight:700; letter-spacing:.06em; color:#e0c4f0; background:rgba(139,61,171,.18); border:1px solid rgba(192,123,224,.4); padding:6px 12px; border-radius:20px; }
+    .live::before{ content:''; width:7px; height:7px; border-radius:50%; background:var(--purple-light); box-shadow:0 0 9px var(--purple-light); animation:pulse 1.6s infinite; }
+    @keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.4; transform:scale(.8);} }
     .presets{ display:flex; background:var(--surface); border:1px solid var(--border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
     .preset{ padding:7px 12px; font-size:.78rem; cursor:pointer; color:var(--muted); border:none; background:none; font-family:inherit; }
     .preset.active{ background:var(--purple); color:#fff; }
@@ -31,7 +40,7 @@
 
     /* Gauges */
     .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
-    .gauge-card{ background:linear-gradient(160deg,var(--purple-card),#150720); border:1px solid var(--border); border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; }
+    .gauge-card{ background:linear-gradient(160deg, rgba(46,28,66,.6), rgba(18,10,30,.82)); border:1px solid rgba(150,95,190,.2); border-radius:18px; padding:20px; display:flex; flex-direction:column; align-items:center; box-shadow:0 6px 30px rgba(0,0,0,.32); }
     .gauge-title{ font-size:.88rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
     .gauge-wrap{ position:relative; width:100%; max-width:210px; aspect-ratio:200/140; }
     .gauge-svg{ width:100%; height:100%; overflow:visible; }
@@ -46,20 +55,21 @@
 
     .lbl{ font-size:.84rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:30px 0 14px; }
     .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:14px; }
-    .card{ background:var(--surface); border:1px solid var(--border); border-radius:15px; padding:20px 22px; }
-    .card.hl{ background:linear-gradient(160deg,var(--purple-dark),var(--purple-deep)); border-color:#4a2358; }
+    .card{ background:linear-gradient(165deg, rgba(44,27,64,.55), rgba(22,16,34,.72)); border:1px solid rgba(150,95,190,.16); border-radius:16px; padding:20px 22px; box-shadow:0 4px 22px rgba(0,0,0,.28); transition:transform .15s, border-color .15s; }
+    .card:hover{ transform:translateY(-2px); border-color:rgba(192,123,224,.35); }
+    .card.hl{ background:linear-gradient(150deg,#7d31a4,#3a1560); border-color:rgba(192,123,224,.5); box-shadow:0 10px 34px rgba(123,45,139,.42); }
     .card .k{ font-size:.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
     .card.hl .k{ color:#e2cff0; }
     .card .prev{ font-size:.75rem; color:var(--muted); margin-top:3px; }
     .card .v{ font-size:2.1rem; font-weight:800; margin-top:10px; line-height:1.05; }
-    .card .v.accent{ color:var(--purple-light); } .card .v.good{ color:var(--green); }
+    .card .v.accent{ color:var(--purple-light); } .card .v.good{ color:var(--good); }
     .card .tax{ font-size:.75rem; color:var(--muted); margin-top:6px; }
 
     .charts2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .charts3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
     @media(max-width:1000px){ .charts3{ grid-template-columns:1fr; } }
     @media(max-width:900px){ .charts2{ grid-template-columns:1fr; } .gauges{ grid-template-columns:1fr; } }
-    .chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .chart-card{ background:linear-gradient(165deg, rgba(44,27,64,.42), rgba(20,14,30,.7)); border:1px solid rgba(150,95,190,.14); border-radius:16px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,.25); }
     .chart-title{ font-size:.8rem; font-weight:700; color:var(--text); margin-bottom:12px; }
     .chart-box{ position:relative; }
     .chart-box.tall{ height:300px; }
@@ -81,6 +91,7 @@
     <div class="top">
       <img class="logo" src="logo-wici.png" alt="Workshop Intensivo Carreira Internacional">
       <div class="top-r">
+        <span class="live">AO VIVO</span>
         <div class="presets" id="presets">
           <button class="preset" data-d="0" onclick="setPreset(this)">Hoje</button>
           <button class="preset" data-d="3" onclick="setPreset(this)">3 dias</button>
@@ -290,46 +301,41 @@
       const ingressos = mc ? mc.total : k.vendas;
       const metaIng = mc ? mc.meta : 1800;
       let h='';
-      // Gauges
+      // Gauges (vendas, sem leads)
+      const orgSales = mc ? mc.vendas_org : 0;
       h+=`<div class="gauges">`;
       h+=gauge('g1','Ingressos Vendidos', ingressos, metaIng, NUM, mc?NUM(Math.round(mc.pace_medio)):NUM(Math.round(ingressos/daysElapsed)), NUM(Math.round(metaIng/daysTotal)));
-      h+=gauge('g2','Leads', leads, m.leads, NUM, NUM(Math.round(leads/daysElapsed)), NUM(Math.round(m.leads/daysTotal)));
+      h+=gauge('g2','Vendas Orgânico', orgSales, metaIng, NUM, mc?NUM(Math.round(mc.pace_medio)):'—', NUM(Math.round(metaIng/daysTotal)));
       h+=gauge('g3','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
       h+=`</div>`;
 
-      // ── 1) Vendas & Compradores (o que mais importa) ──
-      if(mc){
-        h+=`<div class="lbl">Vendas & Compradores</div><div class="grid">`;
-        h+=card('Ingressos Vendidos', NUM(mc.total), 'hl v', 'Meta: '+NUM(mc.meta), PCT(mc.pct_meta)+' da meta')
-          +card('Vendas Workshop ORG', NUM(mc.vendas_org))
-          +card('START ORG', NUM(mc.start_org))
-          +card('VIP ORG', NUM(mc.vip_org))
-          +card('START ADS', NUM(mc.start_ads))
-          +card('VIP ADS', NUM(mc.vip_ads))
-          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))
-          +card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip))
-          +card('Pace médio', (mc.pace_medio||0).toLocaleString('pt-BR',{maximumFractionDigits:1})+' /dia')
-          +card('Falta p/ meta', NUM(mc.falta_meta));
-        h+=`</div>`;
-      }
-
-      // ── 2) Investimento & Tráfego (Meta Ads) ──
-      h+=`<div class="lbl">Investimento & Tráfego (Meta Ads)</div><div class="grid">`;
+      // ── 1) Tráfego · Ads (Meta Ads) ──
+      h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
-        +card('Leads', NUM(leads), 'accent', 'Meta: '+NUM(m.leads), PCT(div(leads,m.leads)*100)+' da meta')
-        +card('Vendas (ads)', NUM(k.vendas))
+        +card('Vendas Ads', NUM(k.vendas), 'accent')
+        +(mc?card('START ADS', NUM(mc.start_ads)):'')
+        +(mc?card('VIP ADS', NUM(mc.vip_ads)):'')
         +card('CPA', BRL(k.cpa))
-        +card('Impressões', NUM(k.impressoes))
-        +card('Alcance', NUM(k.alcance))
-        +card('Cliques', NUM(k.cliques))
         +card('CTR', PCT(k.ctr))
         +card('CPC', BRL(k.cpc))
         +card('CPM', BRL(k.cpm))
         +card('Initiate Checkout', NUM(k.initiate_checkout));
       h+=`</div>`;
 
+      // ── 2) Vendas Orgânicas ──
+      if(mc){
+        h+=`<div class="lbl">Vendas Orgânicas</div><div class="grid">`;
+        h+=card('Ingressos Vendidos', NUM(mc.total), 'hl v', 'Meta: '+NUM(mc.meta), PCT(mc.pct_meta)+' da meta')
+          +card('Vendas Workshop ORG', NUM(mc.vendas_org), 'accent')
+          +card('START ORG', NUM(mc.start_org))
+          +card('VIP ORG', NUM(mc.vip_org))
+          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))
+          +card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip));
+        h+=`</div>`;
+      }
+
       // ── 3) Gráfico por dia (largura total) ──
-      h+=`<div class="lbl">Leads e Investimento por Dia</div>
+      h+=`<div class="lbl">Vendas e Investimento por Dia</div>
         <div class="chart-card"><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>`;
 
       // ── 4) Posicionamento dos Leads (UTMs) — 3 colunas ──
@@ -352,18 +358,19 @@
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
 
-      // Charts
-      const dseries=daily(mrows,urows);
-      const dlabels=dseries.map(d=>{const[y,mo,da]=d.date.split('-');return da+'/'+mo;});
+      // Charts — vendas orgânicas/dia (barras) + investido/dia (linha)
+      const invByDay={}; for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
+      const ms=((DATA.metricas&&DATA.metricas.series)||[]).filter(s=>s.date>=cutoff());
+      const dlabels=ms.map(s=>String(s.date.getDate()).padStart(2,'0')+'/'+String(s.date.getMonth()+1).padStart(2,'0'));
       charts.push(new Chart(document.getElementById('cDia'),{
         data:{ labels:dlabels, datasets:[
-          { type:'bar', label:'Leads', data:dseries.map(d=>d.leads), backgroundColor:'#a855c8bb', borderRadius:4, yAxisID:'y' },
-          { type:'line', label:'Investido', data:dseries.map(d=>d.inv), borderColor:'#f59e0b', backgroundColor:'#f59e0b22', borderWidth:2, pointRadius:3, tension:.3, yAxisID:'y1' },
+          { type:'bar', label:'Vendas Org/dia', data:ms.map(s=>s.paceDia), backgroundColor:'#b565d6cc', borderRadius:5, yAxisID:'y' },
+          { type:'line', label:'Investido/dia', data:ms.map(s=>invByDay[dkey(s.date)]||0), borderColor:'#e6ccf5', backgroundColor:'rgba(230,204,245,.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#e6ccf5', tension:.35, yAxisID:'y1' },
         ]},
         options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-          plugins:{ legend:{labels:{color:'#ccc',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label==='Investido'?` Investido: `+BRL(c.parsed.y):` Leads: ${c.parsed.y}`}} },
-          scales:{ x:{grid:{color:'#ffffff0a'},ticks:{color:'#888',font:{size:11}}}, y:{grid:{color:'#ffffff0a'},ticks:{color:'#888'},beginAtZero:true},
-            y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#f59e0b',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
+          plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label.indexOf('Investido')>=0?` Investido: `+BRL(c.parsed.y):` Vendas: ${c.parsed.y}`}} },
+          scales:{ x:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:11}}}, y:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0'},beginAtZero:true},
+            y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#e6ccf5',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
       }));
       hbar('cOrig', topBy(urows,'source',8));
       hbar('cAds',  topBy(urows,'content',8));
@@ -373,7 +380,7 @@
     function hbar(id, items){
       const el=document.getElementById(id); if(!el) return;
       const valPlugin={ id:'v'+id, afterDatasetsDraw(ch){ const c=ch.ctx; c.save(); ch.getDatasetMeta(0).data.forEach((bar,i)=>{ const v=ch.data.datasets[0].data[i]; c.fillStyle='rgba(255,255,255,.85)'; c.font='600 12px system-ui'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(v, bar.x+6, bar.y); }); c.restore(); } };
-      charts.push(new Chart(el,{ type:'bar', data:{ labels:items.map(i=>i.label.length>26?i.label.slice(0,25)+'…':i.label), datasets:[{ data:items.map(i=>i.count), backgroundColor:'#a855c8bb', borderRadius:4, barThickness:20 }] },
+      charts.push(new Chart(el,{ type:'bar', data:{ labels:items.map(i=>i.label.length>26?i.label.slice(0,25)+'…':i.label), datasets:[{ data:items.map(i=>i.count), backgroundColor:'#b565d6cc', borderRadius:5, barThickness:20 }] },
         options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x+' leads'}}},
           scales:{ x:{display:false,beginAtZero:true}, y:{grid:{display:false},ticks:{color:'#ccc',font:{size:12}}} }, layout:{padding:{right:34}} },
         plugins:[valPlugin] }));
