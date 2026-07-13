@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WICI 3 · Lançamento Hire Brazil</title>
+  <style>
+    :root{
+      --bg:#0d0916; --surface:#181022; --surface2:#1f1430; --border:#2c2038;
+      --text:#f1ecf7; --muted:#9585a8;
+      --accent:#7b2d8b; --accent-light:#b565d6; --green:#22c55e; --red:#ef4444; --amber:#f59e0b;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+    a{ color:inherit; }
+    .page{ max-width:1400px; margin:0 auto; padding:26px 18px 60px; }
+
+    .top{ display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:18px; }
+    .top h1{ font-size:1.35rem; font-weight:800; margin:0; }
+    .sub{ font-size:.82rem; color:var(--muted); margin-top:5px; }
+    .btn{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:8px 14px; font-size:.8rem; cursor:pointer; font-family:inherit; }
+    .btn:hover{ background:#ffffff12; }
+    .updated{ font-size:.72rem; color:var(--muted); margin-top:6px; }
+
+    .tabs{ display:inline-flex; background:var(--surface); border:1px solid var(--border); border-radius:11px; overflow:hidden; margin-bottom:22px; }
+    .tab{ padding:10px 24px; font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted); border:none; background:none; transition:.15s; font-family:inherit; }
+    .tab.active{ background:var(--accent); color:#fff; }
+
+    .lbl{ font-size:.72rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:24px 0 11px; }
+    .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:12px; }
+    .card{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 15px; }
+    .card .k{ font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .card .v{ font-size:1.4rem; font-weight:800; margin-top:6px; }
+    .card .v.accent{ color:var(--accent-light); }
+    .card .v.good{ color:var(--green); }
+
+    .metas{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
+    .meta{ background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 16px; }
+    .meta .mtop{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+    .meta .mname{ font-size:.79rem; font-weight:700; }
+    .meta .mgoal{ font-size:.71rem; color:var(--muted); }
+    .meta .mval{ font-size:1.3rem; font-weight:800; margin:7px 0 9px; }
+    .bar{ height:8px; border-radius:6px; background:#ffffff14; overflow:hidden; }
+    .bar>i{ display:block; height:100%; border-radius:6px; background:var(--accent-light); transition:width .4s; }
+    .bar.good>i{ background:var(--green); } .bar.warn>i{ background:var(--amber); } .bar.bad>i{ background:var(--red); }
+    .meta .mpct{ font-size:.7rem; color:var(--muted); margin-top:6px; }
+
+    .twrap{ overflow-x:auto; border:1px solid var(--border); border-radius:13px; }
+    table{ width:100%; border-collapse:collapse; font-size:.8rem; }
+    th,td{ padding:10px 13px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--border); }
+    th{ color:var(--muted); font-weight:600; font-size:.7rem; text-transform:uppercase; letter-spacing:.03em; background:var(--surface2); position:sticky; top:0; }
+    td:first-child,th:first-child{ text-align:left; max-width:340px; white-space:normal; }
+    tr:last-child td{ border-bottom:none; }
+    .vlink{ color:var(--accent-light); text-decoration:none; font-size:.75rem; }
+    .empty,.loading{ text-align:center; color:var(--muted); padding:34px; font-size:.85rem; }
+    .err{ color:var(--red); }
+    .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>🚀 WICI 3 · Lançamento Hire Brazil</h1>
+        <div class="sub" id="sub">Workshop Intensivo de Carreira Internacional</div>
+      </div>
+      <div style="text-align:right">
+        <button class="btn" onclick="loadAll()">↻ Atualizar</button>
+        <div class="updated" id="updated"></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-p="geral" onclick="setTab(this)">Geral</button>
+      <button class="tab" data-p="hire" onclick="setTab(this)">Hire</button>
+      <button class="tab" data-p="malu" onclick="setTab(this)">Malu</button>
+    </div>
+
+    <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
+
+    <div class="foot">Atualiza automaticamente a cada abertura · fonte: planilha de dados do lançamento</div>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    const SHEET_ID = '1DnIF0UDbdpZ7wV09dEjIkYP8G4H47Tzi7PXOKES5gkI';
+    const TAB_MALU = 'Malu Meta', TAB_HIRE = 'Hire Meta', TAB_METAS = 'Metas';
+    // Metas do lançamento (fallback — a dash tenta ler da aba "Metas"; se falhar, usa estes)
+    const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80,
+      connect_rate:82, data_inicio:'13/07/2026', data_evento:'15/08 e 16/08', produto:'Workshop' };
+
+    let DATA = { malu:[], hire:[], metas:{...METAS_DEFAULT} };
+    let profile = 'geral';
+
+    // ── Formatters ──────────────────────────────────────────────────────────────
+    const BRL = v => (v==null||isNaN(v)) ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const NUM = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+    const PCT = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
+    const RS  = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'x';
+
+    function parseBR(s){
+      if(s==null) return 0;
+      if(typeof s==='number') return s;
+      s = String(s).replace(/R\$/g,'').replace(/%/g,'').replace(/ /g,'').trim();
+      if(!s) return 0;
+      s = s.replace(/\./g,'').replace(',','.');
+      const n = parseFloat(s); return isNaN(n) ? 0 : n;
+    }
+
+    // ── gviz JSONP ────────────────────────────────────────────────────────────
+    let _seq = 0;
+    function gviz(query){
+      return new Promise((resolve, reject)=>{
+        const cb = '__gv_' + (++_seq) + '_' + Date.now();
+        const s = document.createElement('script');
+        const done = ok => { try{ delete window[cb]; }catch(e){} if(s.parentNode) s.parentNode.removeChild(s); clearTimeout(tm); };
+        const tm = setTimeout(()=>{ done(); reject(new Error('timeout ' + query)); }, 20000);
+        window[cb] = resp => { done(true); (resp && resp.table) ? resolve(resp.table) : reject(new Error('vazio ' + query)); };
+        s.onerror = ()=>{ done(); reject(new Error('rede ' + query)); };
+        s.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?' + query + '&tqx=responseHandler:' + cb;
+        document.head.appendChild(s);
+      });
+    }
+    const cellNum  = c => !c ? 0 : (typeof c.v === 'number' ? c.v : parseBR(c.f != null ? c.f : c.v));
+    const cellStr  = c => !c ? '' : (c.f != null ? c.f : (c.v != null ? String(c.v) : ''));
+    const cellDate = c => {
+      if(!c) return null;
+      if(c.f) { const m = String(c.f).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/); if(m) return new Date(+m[3], +m[2]-1, +m[1]); }
+      const d = String(c.v||'').match(/Date\((\d+),(\d+),(\d+)/); if(d) return new Date(+d[1], +d[2], +d[3]);
+      return null;
+    };
+
+    function metaRows(table){
+      const out = [];
+      for(const r of (table.rows||[])){
+        const c = r.c || [];
+        const d = cellDate(c[0]);
+        if(!d) continue;
+        out.push({ campanha:cellStr(c[1]), cost:cellNum(c[3]), impressions:cellNum(c[4]), reach:cellNum(c[5]),
+          clicks:cellNum(c[6]), pageview:cellNum(c[7]), ic:cellNum(c[8]), compras:cellNum(c[9]),
+          link:cellStr(c[10]), anuncio:cellStr(c[11]), faturamento:cellNum(c[12]) });
+      }
+      return out;
+    }
+
+    // Lê a aba Metas (chave|valor). gviz trata a 1a linha como header → recupero de table.cols.
+    function readMetas(table){
+      const rows = [];
+      if(table.cols && table.cols.length) rows.push(table.cols.map(c => c.label != null ? c.label : (c.id||'')));
+      for(const r of (table.rows||[])) rows.push((r.c||[]).map(c => c ? (c.f != null ? c.f : (c.v != null ? String(c.v) : '')) : ''));
+      const m = {...METAS_DEFAULT};
+      for(const r of rows){
+        const key = (r[0]||'').toString().trim().toLowerCase();
+        const val = r[1] != null ? r[1] : '';
+        if(key.includes('leads')){ if(parseBR(val)) m.leads = parseBR(val); if(r[8]) m.produto = String(r[8]).trim(); }
+        else if(key.includes('investimento')){ if(parseBR(val)) m.investimento = parseBR(val); if(r[4]) m.data_inicio = String(r[4]).trim(); if(r[8]) m.data_evento = String(r[8]).trim(); }
+        else if(key === 'cpa'){ if(parseBR(val)) m.cpa = parseBR(val); }
+        else if(key === 'cpm'){ if(parseBR(val)) m.cpm = parseBR(val); }
+        else if(key === 'ctr'){ if(parseBR(val)) m.ctr = parseBR(val); }
+        else if(key.includes('connect')){ if(parseBR(val)) m.connect_rate = parseBR(val); }
+      }
+      return m;
+    }
+
+    // ── Aggregation ─────────────────────────────────────────────────────────────
+    const div = (a,b) => b ? a/b : 0;
+    function aggregate(rows){
+      let cost=0,imp=0,reach=0,clk=0,pv=0,ic=0,comp=0,fat=0;
+      for(const r of rows){ cost+=r.cost; imp+=r.impressions; reach+=r.reach; clk+=r.clicks; pv+=r.pageview; ic+=r.ic; comp+=r.compras; fat+=r.faturamento; }
+      return { investido:cost, impressoes:imp, alcance:reach, cliques:clk, pageviews:pv, initiate_checkout:ic, vendas:comp, faturamento:fat,
+        ctr:div(clk,imp)*100, cpm:div(cost,imp)*1000, cpc:div(cost,clk), cpa:div(cost,comp), roas:div(fat,cost), ticket:div(fat,comp), connect_rate:div(pv,clk)*100 };
+    }
+    function anuncios(rows){
+      const by = {};
+      for(const r of rows){
+        const key = r.anuncio || r.campanha || '(sem nome)';
+        let o = by[key];
+        if(!o) o = by[key] = { nome:key, link:r.link, cost:0, impressions:0, clicks:0, ic:0, compras:0, faturamento:0 };
+        o.cost+=r.cost; o.impressions+=r.impressions; o.clicks+=r.clicks; o.ic+=r.ic; o.compras+=r.compras; o.faturamento+=r.faturamento;
+        if(!o.link && r.link) o.link = r.link;
+      }
+      return Object.values(by).map(o => ({ nome:o.nome, link:o.link, investido:o.cost, impressoes:o.impressions, cliques:o.clicks,
+        initiate_checkout:o.ic, vendas:o.compras, faturamento:o.faturamento,
+        cpa:div(o.cost,o.compras), roas:div(o.faturamento,o.cost), ctr:div(o.clicks,o.impressions)*100 }))
+        .sort((a,b)=> b.investido - a.investido);
+    }
+
+    // ── Render ──────────────────────────────────────────────────────────────────
+    function card(k,v,cls){ return `<div class="card"><div class="k">${k}</div><div class="v ${cls||''}">${v}</div></div>`; }
+    function metaCard(name, atual, meta, fmt, lowerBetter){
+      const has = meta && meta>0;
+      const pct = has ? atual/meta*100 : 0;
+      const barPct = Math.max(0, Math.min(100, pct));
+      let cls = '';
+      if(has){ cls = lowerBetter ? (atual<=meta ? 'good' : (atual<=meta*1.15 ? 'warn' : 'bad')) : (pct>=100 ? 'good' : (pct>=70 ? 'warn' : 'bad')); }
+      const txt = has ? (lowerBetter ? (atual<=meta ? '✓ dentro da meta' : 'acima da meta') : PCT(pct) + ' da meta') : '';
+      return `<div class="meta"><div class="mtop"><span class="mname">${name}</span><span class="mgoal">meta: ${meta?fmt(meta):'—'}</span></div>
+        <div class="mval">${fmt(atual)}</div><div class="bar ${cls}"><i style="width:${barPct}%"></i></div><div class="mpct">${txt}</div></div>`;
+    }
+
+    function render(){
+      const rows = profile==='malu' ? DATA.malu : profile==='hire' ? DATA.hire : DATA.malu.concat(DATA.hire);
+      const k = aggregate(rows), m = DATA.metas, isGeral = profile==='geral';
+      let sub = 'Workshop Intensivo de Carreira Internacional';
+      if(m.data_inicio) sub += ' · início ' + m.data_inicio;
+      if(m.data_evento) sub += ' · evento ' + m.data_evento;
+      document.getElementById('sub').textContent = sub;
+
+      let h = '';
+      h += `<div class="lbl">Resultado — ${profile.toUpperCase()}</div><div class="grid">`;
+      h += card('Investido', BRL(k.investido), 'accent') + card('Vendas', NUM(k.vendas)) + card('Faturamento', BRL(k.faturamento), 'good')
+         + card('ROAS', RS(k.roas)) + card('CPA', BRL(k.cpa)) + card('Ticket médio', BRL(k.ticket));
+      h += `</div>`;
+
+      h += `<div class="lbl">Funil & Tráfego</div><div class="grid">`;
+      h += card('Impressões', NUM(k.impressoes)) + card('Alcance', NUM(k.alcance)) + card('Cliques', NUM(k.cliques))
+         + card('CTR', PCT(k.ctr)) + card('CPC', BRL(k.cpc)) + card('CPM', BRL(k.cpm))
+         + card('Page views', NUM(k.pageviews)) + card('Initiate Checkout', NUM(k.initiate_checkout)) + card('Connect rate', PCT(k.connect_rate));
+      h += `</div>`;
+
+      h += `<div class="lbl">Metas do lançamento${isGeral?'':' (total do lançamento)'}</div><div class="metas">`;
+      h += metaCard('Investimento', k.investido, m.investimento, BRL, false)
+         + metaCard('Leads (Init. Checkout)', k.initiate_checkout, m.leads, NUM, false)
+         + metaCard('CPA', k.cpa, m.cpa, BRL, true)
+         + metaCard('CPM', k.cpm, m.cpm, BRL, true)
+         + metaCard('CTR', k.ctr, m.ctr, PCT, false)
+         + metaCard('Connect rate', k.connect_rate, m.connect_rate, PCT, false);
+      h += `</div>`;
+
+      const ads = anuncios(rows);
+      h += `<div class="lbl">Por anúncio (${ads.length})</div><div class="twrap"><table><thead><tr>
+        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>Faturamento</th><th>CPA</th><th>ROAS</th><th></th>
+      </tr></thead><tbody>`;
+      if(!ads.length){ h += `<tr><td colspan="11" class="empty">Sem dados</td></tr>`; }
+      else for(const a of ads){
+        h += `<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td>
+          <td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.faturamento)}</td><td>${BRL(a.cpa)}</td><td>${RS(a.roas)}</td>
+          <td>${a.link ? `<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>` : '—'}</td></tr>`;
+      }
+      h += `</tbody></table></div>`;
+      document.getElementById('body').innerHTML = h;
+      document.getElementById('updated').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
+
+    function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); profile = el.dataset.p; render(); }
+
+    async function loadAll(){
+      document.getElementById('body').innerHTML = '<div class="loading">Carregando dados da planilha…</div>';
+      try{
+        const [tMalu, tHire, tMetas] = await Promise.all([
+          gviz('sheet=' + encodeURIComponent(TAB_MALU)),
+          gviz('sheet=' + encodeURIComponent(TAB_HIRE)),
+          gviz('sheet=' + encodeURIComponent(TAB_METAS)).catch(()=>null),
+        ]);
+        DATA.malu = metaRows(tMalu);
+        DATA.hire = metaRows(tHire);
+        DATA.metas = tMetas ? readMetas(tMetas) : {...METAS_DEFAULT};
+        render();
+      }catch(e){
+        document.getElementById('body').innerHTML = '<div class="empty err">Erro ao carregar a planilha: ' + e.message + '</div>';
+      }
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>
