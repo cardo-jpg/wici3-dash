@@ -98,7 +98,7 @@
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
-    <div class="foot">Atualiza automaticamente a cada abertura · dados a partir de 13/07 · fonte: planilhas do lançamento</div>
+    <div class="foot" id="foot">Atualiza automaticamente a cada abertura · dados a partir de 13/07</div>
   </div>
 
   <script>
@@ -109,7 +109,7 @@
     const START = new Date(2026, 6, 13);          // 13/07/2026 (piso dos dados)
     const EVENT = new Date(2026, 7, 15);          // 15/08/2026 (evento) — p/ meta/dia
     const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80, connect_rate:82,
-      data_inicio:'13/07/2026', data_evento:'15/08 e 16/08' };
+      cotacao:5.16, data_inicio:'13/07/2026', data_evento:'15/08 e 16/08' };
 
     let DATA = { malu:[], hire:[], umalu:[], uhire:[], metas:{...METAS_DEFAULT} };
     let profile = 'geral', presetDays = 'all';
@@ -186,6 +186,7 @@
         else if(k==='cpm'){ if(parseBR(v))m.cpm=parseBR(v); }
         else if(k==='ctr'){ if(parseBR(v))m.ctr=parseBR(v); }
         else if(k.includes('connect')){ if(parseBR(v))m.connect_rate=parseBR(v); }
+        else if(k.includes('cotac')||k.includes('dolar')||k.includes('dólar')||k.includes('cambio')||k.includes('câmbio')||k==='usd'){ if(parseBR(v))m.cotacao=parseBR(v); }
       }
       return m;
     }
@@ -323,6 +324,7 @@
 
       document.getElementById('body').innerHTML=h;
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
 
       // Charts
       const dseries=daily(mrows,urows);
@@ -367,6 +369,10 @@
         DATA.malu=metaRows(tMalu); DATA.hire=metaRows(tHire);
         DATA.umalu=tuMalu?utmRows(tuMalu):[]; DATA.uhire=tuHire?utmRows(tuHire):[];
         DATA.metas=tMetas?readMetas(tMetas):{...METAS_DEFAULT};
+        // Cost vem em US$ (conta do Meta) → converte p/ R$ pela cotação (aba Metas ou 5,16)
+        const cot = DATA.metas.cotacao || 5.16;
+        DATA.malu.forEach(r=>{ r.cost *= cot; });
+        DATA.hire.forEach(r=>{ r.cost *= cot; });
         render();
       }catch(e){
         document.getElementById('body').innerHTML='<div class="empty err">Erro ao carregar: '+e.message+'</div>';
