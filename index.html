@@ -40,13 +40,14 @@
 
     /* Gauges */
     .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
-    .gauge-card{ background:linear-gradient(160deg, rgba(46,28,66,.6), rgba(18,10,30,.82)); border:1px solid rgba(150,95,190,.2); border-radius:18px; padding:20px; display:flex; flex-direction:column; align-items:center; box-shadow:0 6px 30px rgba(0,0,0,.32); }
-    .gauge-title{ font-size:.88rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+    .gauge-card{ background:linear-gradient(160deg, rgba(120,58,155,.4), rgba(38,20,58,.85)); border:1px solid rgba(192,123,224,.34); border-radius:20px; padding:26px 22px; display:flex; flex-direction:column; align-items:center; box-shadow:0 10px 44px rgba(139,61,171,.28); }
+    .gauge-card:hover{ border-color:rgba(206,140,235,.55); }
+    .gauge-title{ font-size:.98rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#e0c4f0; margin-bottom:10px; }
     .gauge-wrap{ position:relative; width:100%; max-width:210px; aspect-ratio:200/140; }
     .gauge-svg{ width:100%; height:100%; overflow:visible; }
     .gauge-track{ fill:none; stroke:#ffffff12; stroke-width:14; stroke-linecap:round; }
     .gauge-fill{ fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset .6s ease; }
-    .gauge-pct{ position:absolute; left:0; right:0; top:52%; transform:translateY(-50%); text-align:center; font-size:2.1rem; font-weight:800; }
+    .gauge-pct{ position:absolute; left:0; right:0; top:52%; transform:translateY(-50%); text-align:center; font-size:2.5rem; font-weight:800; text-shadow:0 2px 12px rgba(192,123,224,.4); }
     .gauge-leg{ font-size:12px; font-weight:700; }
     .gauge-stats{ display:flex; gap:22px; margin-top:8px; }
     .gauge-stat{ text-align:center; }
@@ -55,9 +56,9 @@
 
     .lbl{ font-size:.84rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:30px 0 14px; }
     .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(205px,1fr)); gap:14px; }
-    .card{ background:linear-gradient(165deg, rgba(44,27,64,.55), rgba(22,16,34,.72)); border:1px solid rgba(150,95,190,.16); border-radius:16px; padding:18px 20px; box-shadow:0 4px 22px rgba(0,0,0,.28); transition:transform .15s, border-color .15s; min-height:126px; display:flex; flex-direction:column; justify-content:center; }
-    .card:hover{ transform:translateY(-2px); border-color:rgba(192,123,224,.35); }
-    .card.hl{ background:linear-gradient(150deg,#7d31a4,#3a1560); border-color:rgba(192,123,224,.5); box-shadow:0 10px 34px rgba(123,45,139,.42); }
+    .card{ background:linear-gradient(165deg, rgba(96,56,132,.42), rgba(58,36,84,.55)); border:1px solid rgba(168,110,205,.24); border-radius:16px; padding:18px 20px; box-shadow:0 4px 22px rgba(0,0,0,.28); transition:transform .15s, border-color .15s; min-height:126px; display:flex; flex-direction:column; justify-content:center; }
+    .card:hover{ transform:translateY(-2px); border-color:rgba(192,123,224,.5); }
+    .card.hl{ background:linear-gradient(150deg,#8a37b4,#42186e); border-color:rgba(206,140,235,.55); box-shadow:0 10px 34px rgba(139,61,171,.5); }
     .card .k{ font-size:.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
     .card.hl .k{ color:#e2cff0; }
     .card .prev{ font-size:.75rem; color:var(--muted); margin-top:3px; }
@@ -83,6 +84,8 @@
     .vlink{ color:var(--purple-light); text-decoration:none; font-size:.74rem; }
     .w3filter{ width:100%; max-width:340px; margin:0 0 14px; padding:11px 14px; background:rgba(30,20,44,.7); border:1px solid rgba(150,95,190,.2); border-radius:10px; color:var(--text); font-family:inherit; font-size:.85rem; }
     .w3filter::placeholder{ color:var(--muted); }
+    th.sortable{ cursor:pointer; user-select:none; transition:color .12s; }
+    th.sortable:hover{ color:var(--purple-light); }
     .al{ display:inline-block; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:7px; white-space:nowrap; }
     .al-ok{ color:#8ef0b0; background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.4); }
     .al-alto{ color:#f5cd6b; background:rgba(245,158,11,.14); border:1px solid rgba(245,158,11,.4); }
@@ -93,22 +96,31 @@
     .tp-f{ color:#9cc7f0; background:rgba(90,150,240,.14); border:1px solid rgba(90,150,240,.4); }
     .tp-n{ color:var(--muted); }
     .lp-win{ color:#8ef0b0; font-weight:800; }
-    .lp-grid{ display:flex; flex-direction:column; gap:22px; }
-    .lp-panel{ background:linear-gradient(165deg, rgba(44,27,64,.42), rgba(20,14,30,.7)); border:1px solid rgba(150,95,190,.18); border-radius:16px; padding:20px 22px; box-shadow:0 4px 20px rgba(0,0,0,.25); }
-    .lp-header{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid rgba(150,95,190,.14); }
-    .lp-header-name{ font-size:1.1rem; font-weight:800; }
+    .lp-grid{ display:flex; flex-direction:column; gap:24px; }
+    .lp-geral{ background:linear-gradient(150deg,#8a37b4,#42186e); border:1px solid rgba(206,140,235,.5); border-radius:16px; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px; box-shadow:0 8px 30px rgba(139,61,171,.35); }
+    .lp-geral-lbl{ font-size:.92rem; font-weight:800; letter-spacing:.05em; }
+    .lp-geral-stats{ display:flex; gap:34px; flex-wrap:wrap; }
+    .lp-panel{ background:linear-gradient(165deg, rgba(60,36,86,.4), rgba(24,16,36,.7)); border:1px solid rgba(150,95,190,.2); border-radius:16px; padding:20px 22px; box-shadow:0 4px 20px rgba(0,0,0,.25); }
+    .lp-header{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid rgba(150,95,190,.16); }
+    .lp-header-name{ font-size:1.15rem; font-weight:800; }
     .lp-header-url{ display:block; font-size:.74rem; color:var(--purple-light); text-decoration:none; opacity:.7; margin-top:3px; }
     .lp-header-url:hover{ opacity:1; }
-    .lp-header-right{ display:flex; gap:26px; flex-wrap:wrap; }
-    .lp-meta-lbl{ font-size:.64rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .lp-header-right{ display:flex; gap:28px; flex-wrap:wrap; }
+    .lp-meta-lbl{ font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
     .lp-meta-val{ font-size:1.4rem; font-weight:800; margin-top:2px; }
-    .lp-funnel{ display:flex; flex-direction:column; gap:13px; }
-    .lp-step-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
-    .lp-step-n{ font-size:.84rem; font-weight:600; }
-    .lp-step-rate{ font-size:.76rem; color:var(--purple-light); font-weight:700; }
-    .lp-step-bar{ position:relative; height:36px; background:rgba(255,255,255,.05); border-radius:9px; overflow:hidden; }
-    .lp-step-bar > i{ display:block; height:100%; background:linear-gradient(90deg,#6a2585,#c07be0); border-radius:9px; transition:width .5s; }
-    .lp-step-v{ position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:.88rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.5); }
+    .lp-meta-val.accent{ color:var(--purple-light); }
+    .lp-body{ display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+    @media(max-width:900px){ .lp-body{ grid-template-columns:1fr; } }
+    .fn{ display:flex; flex-direction:column; gap:5px; }
+    .fn-seg{ height:84px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .fn-lbl{ font-size:.66rem; font-weight:700; letter-spacing:.06em; color:rgba(255,255,255,.75); }
+    .fn-val{ font-size:1.5rem; font-weight:800; color:#fff; margin-top:3px; }
+    .fn-rate{ text-align:center; margin:1px 0; }
+    .fn-pill{ display:inline-block; font-size:.7rem; font-weight:700; color:#e0c4f0; background:rgba(24,16,36,.75); border:1px solid rgba(192,123,224,.4); padding:4px 13px; border-radius:20px; }
+    .lp-charts-col{ display:flex; flex-direction:column; gap:14px; }
+    .lp-chart-card{ background:rgba(30,20,44,.5); border:1px solid rgba(150,95,190,.16); border-radius:12px; padding:14px 16px; }
+    .lp-chart-title{ font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:10px; }
+    .lp-chart-h{ height:118px; }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
@@ -417,6 +429,18 @@
     function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); view=el.dataset.p; route(); }
     function setPreset(el){ document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active')); el.classList.add('active'); presetDays=el.dataset.d; route(); }
 
+    // ── Ordenação de tabelas (clicar no cabeçalho) ──────────────────────────────
+    let _sortState={};
+    function doSort(tab,key){ const st=_sortState[tab]||(_sortState[tab]={key:key,dir:-1}); if(st.key===key) st.dir=-st.dir; else { st.key=key; st.dir=-1; } route(); }
+    function sortRows(tab, rows, defKey){
+      const st=_sortState[tab]||(_sortState[tab]={key:defKey,dir:-1});
+      return rows.slice().sort((a,b)=>{ let va=a[st.key], vb=b[st.key];
+        if(va==null||va==='')va=-Infinity; if(vb==null||vb==='')vb=-Infinity;
+        if(typeof va==='number'&&typeof vb==='number') return (va-vb)*st.dir;
+        return String(va).localeCompare(String(vb),'pt')*st.dir; });
+    }
+    function sortTh(tab,key,label,left){ const st=_sortState[tab]||{}; const ar=st.key===key?(st.dir<0?' ↓':' ↑'):''; return `<th class="sortable" onclick="doSort('${tab}','${key}')"${left?' style="text-align:left"':''}>${label}${ar}</th>`; }
+
     // ── Campanhas / Públicos / Criativos ────────────────────────────────────────
     function campType(name){ if(/_Q(\b|_)|\[Q\]|QUENTE|RMKT|REMARK/i.test(name)) return 'quente'; if(/_F(\b|_)|\[F\]|\bFRIO\b/i.test(name)) return 'frio'; return '—'; }
     function campaigns(rows){
@@ -435,13 +459,13 @@
     function renderCampanhas(){
       killCharts();
       const rows=DATA.malu.concat(DATA.hire).filter(r=>inRange(r.date));
-      const camps=campaigns(rows);
+      const camps=sortRows('campanhas', campaigns(rows), 'investido');
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       const TP={quente:['🔥 Quente','tp-q'],frio:['❄ Frio','tp-f'],'—':['—','tp-n']};
       let h=`<div class="lbl">Performance por Campanha (${camps.length}) · meta CPA R$ ${((DATA.metas&&DATA.metas.cpa)||71).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
         <input class="w3filter" placeholder="Filtrar por nome…" value="${_campFilter}" oninput="_campFilter=this.value.toLowerCase(); document.querySelectorAll('.crow').forEach(function(tr){ tr.style.display=tr.dataset.n.indexOf(_campFilter)>=0?'':'none'; });">
         <div class="twrap"><table><thead><tr>
-        <th>Campanha</th><th>Tipo</th><th>Investido</th><th>Impr.</th><th>CTR</th><th>Cliques</th><th>PV</th><th>CR%</th><th>Checkout</th><th>Vendas</th><th>Tx.Conv</th><th>CPA</th><th>Alerta</th>
+        ${sortTh('campanhas','nome','Campanha',1)}${sortTh('campanhas','tipo','Tipo')}${sortTh('campanhas','investido','Investido')}${sortTh('campanhas','imp','Impr.')}${sortTh('campanhas','ctr','CTR')}${sortTh('campanhas','cliques','Cliques')}${sortTh('campanhas','pv','PV')}${sortTh('campanhas','cr','CR%')}${sortTh('campanhas','checkout','Checkout')}${sortTh('campanhas','vendas','Vendas')}${sortTh('campanhas','txconv','Tx.Conv')}${sortTh('campanhas','cpa','CPA')}${sortTh('campanhas','al','Alerta')}
       </tr></thead><tbody>`;
       if(!camps.length) h+=`<tr><td colspan="13" class="empty">Sem dados no período</td></tr>`;
       else for(const c of camps){ const a=AL[c.al], t=TP[c.tipo];
@@ -470,15 +494,15 @@
         if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,ic:0,vendas:0};
         o.cost+=r.cost;o.imp+=r.impressions;o.clk+=r.clicks;o.ic+=r.ic;o.vendas+=r.compras;
       }
-      const pubs=Object.values(by).map(o=>{ const cpa=div(o.cost,o.vendas);
+      const pubs=sortRows('publicos', Object.values(by).map(o=>{ const cpa=div(o.cost,o.vendas);
         let al='ok'; if(o.vendas===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
         return {nome:o.nome,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:o.vendas,cpa,al};
-      }).sort((a,b)=>b.investido-a.investido);
+      }), 'investido');
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Públicos — Performance por Ad Set (${pubs.length})</div>
         <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.purow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
         <div class="twrap"><table><thead><tr>
-        <th>Público (Ad Set)</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>CPA</th><th>Alerta</th>
+        ${sortTh('publicos','nome','Público (Ad Set)',1)}${sortTh('publicos','investido','Investido')}${sortTh('publicos','imp','Impressões')}${sortTh('publicos','cliques','Cliques')}${sortTh('publicos','ctr','CTR')}${sortTh('publicos','ic','Init. Checkout')}${sortTh('publicos','vendas','Vendas')}${sortTh('publicos','cpa','CPA')}<th>Alerta</th>
       </tr></thead><tbody>`;
       if(!pubs.length) h+=`<tr><td colspan="9" class="empty">Sem dados no período</td></tr>`;
       else for(const p of pubs){ const b=AL[p.al];
@@ -490,13 +514,13 @@
     }
     function renderCriativos(){
       killCharts();
-      const ads=anuncios(DATA.malu.concat(DATA.hire).filter(r=>inRange(r.date)));
+      const ads=sortRows('criativos', anuncios(DATA.malu.concat(DATA.hire).filter(r=>inRange(r.date))), 'investido');
       const metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Criativos — Performance por Anúncio (${ads.length})</div>
         <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.crrow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
         <div class="twrap"><table><thead><tr>
-        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>CPA</th><th>Alerta</th><th>Link</th>
+        ${sortTh('criativos','nome','Anúncio',1)}${sortTh('criativos','investido','Investido')}${sortTh('criativos','impressoes','Impressões')}${sortTh('criativos','cliques','Cliques')}${sortTh('criativos','ctr','CTR')}${sortTh('criativos','initiate_checkout','Init. Checkout')}${sortTh('criativos','vendas','Vendas')}${sortTh('criativos','cpa','CPA')}<th>Alerta</th><th>Link</th>
       </tr></thead><tbody>`;
       if(!ads.length) h+=`<tr><td colspan="10" class="empty">Sem dados no período</td></tr>`;
       else for(const a of ads){ let al='ok'; if(a.vendas===0) al='sem'; else if(a.cpa>metaCPA*1.5) al='critico'; else if(a.cpa>metaCPA) al='alto'; const b=AL[al];
@@ -514,37 +538,69 @@
       return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:div(pv,clk)*100,
         tx_checkout:div(ic,pv)*100, tx_venda:div(vd,ic)*100, conv:div(vd,clk)*100, cpa:div(cost,vd) };
     }
+    function lpDaily(rows){
+      const map={};
+      for(const r of rows){ const k=dkey(r.date); const o=map[k]||(map[k]={clk:0,pv:0,ic:0,vd:0,imp:0}); o.clk+=r.clicks;o.pv+=r.pageview;o.ic+=r.ic;o.vd+=r.compras;o.imp+=r.impressions; }
+      const keys=Object.keys(map).sort();
+      return { labels:keys.map(k=>{const p=k.split('-');return p[2]+'/'+p[1];}),
+        connect:keys.map(k=>{const o=map[k];return o.clk?+(o.pv/o.clk*100).toFixed(2):null;}),
+        checkout:keys.map(k=>{const o=map[k];return o.pv?+(o.ic/o.pv*100).toFixed(2):null;}),
+        txconv:keys.map(k=>{const o=map[k];return o.ic?+(o.vd/o.ic*100).toFixed(2):null;}),
+        txconvpv:keys.map(k=>{const o=map[k];return o.pv?+(o.vd/o.pv*100).toFixed(2):null;}) };
+    }
+    function lpLine(cid, labels, data, color){
+      const el=document.getElementById(cid); if(!el) return;
+      charts.push(new Chart(el,{ type:'line',
+        data:{ labels, datasets:[{ data, borderColor:color, backgroundColor:color+'22', borderWidth:2, pointRadius:2, pointBackgroundColor:color, tension:.3, spanGaps:true, fill:true }] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+PCT(c.parsed.y)}}},
+          scales:{ x:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:9},maxTicksLimit:8}}, y:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:9},callback:v=>Math.round(v)+'%'},beginAtZero:true} } }
+      }));
+    }
     function renderLP(){
       killCharts();
       const lps=[
-        {nome:'LP Malu', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-malu-ads-c', a:lpAgg(DATA.malu.filter(r=>inRange(r.date)))},
-        {nome:'LP Hire', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-hire-ads-c', a:lpAgg(DATA.hire.filter(r=>inRange(r.date)))},
+        {nome:'LP Malu', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-malu-ads-c', rows:DATA.malu.filter(r=>inRange(r.date))},
+        {nome:'LP Hire', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-hire-ads-c', rows:DATA.hire.filter(r=>inRange(r.date))},
       ];
-      let h=`<div class="lbl">Landing Pages — Funil por LP</div><div class="lp-grid">`;
-      for(const lp of lps){ const a=lp.a; const maxV=a.imp||1;
+      const g=lpAgg(lps[0].rows.concat(lps[1].rows));
+      let h=`<div class="lp-geral"><div class="lp-geral-lbl">GERAL (A + B)</div><div class="lp-geral-stats">
+        <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(g.investido)}</div></div>
+        <div><div class="lp-meta-lbl">CPA Médio</div><div class="lp-meta-val">${BRL(g.cpa)}</div></div>
+        <div><div class="lp-meta-lbl">Tx Conv PV→V</div><div class="lp-meta-val accent">${PCT(div(g.vendas,g.pv)*100)}</div></div>
+        <div><div class="lp-meta-lbl">Total Vendas</div><div class="lp-meta-val">${NUM(g.vendas)}</div></div>
+      </div></div><div class="lp-grid">`;
+      const jobs=[];
+      lps.forEach((lp,i)=>{ const a=lpAgg(lp.rows), d=lpDaily(lp.rows);
         const steps=[
-          {n:'Impressões', v:a.imp, rate:''},
-          {n:'Cliques', v:a.cliques, rate:'CTR '+PCT(a.ctr)},
-          {n:'Page views', v:a.pv, rate:'Connect '+PCT(a.connect)},
-          {n:'Initiate Checkout', v:a.ic, rate:'Checkout '+PCT(a.tx_checkout)},
-          {n:'Vendas', v:a.vendas, rate:'Venda '+PCT(a.tx_venda)},
+          {n:'IMPRESSÕES', v:a.imp, wt:100, wb:86, rate:'CTR '+PCT(a.ctr)},
+          {n:'CLIQUES NO LINK', v:a.cliques, wt:80, wb:66, rate:'CONNECT '+PCT(a.connect)},
+          {n:'PAGE VIEW', v:a.pv, wt:60, wb:46, rate:'CHECKOUT '+PCT(a.tx_checkout)},
+          {n:'CHECKOUT', v:a.ic, wt:40, wb:30, rate:'TX CONV '+PCT(a.tx_venda)},
+          {n:'VENDAS ADS', v:a.vendas, wt:26, wb:20, rate:''},
         ];
-        h+=`<div class="lp-panel"><div class="lp-header">
-          <div class="lp-header-left"><div class="lp-header-name">${lp.nome}</div><a class="lp-header-url" href="${lp.url}" target="_blank">${lp.url.replace('https://','')}</a></div>
-          <div class="lp-header-right">
-            <div class="lp-meta-stat"><div class="lp-meta-lbl">Investido</div><div class="lp-meta-val">${BRL(a.investido)}</div></div>
-            <div class="lp-meta-stat"><div class="lp-meta-lbl">Vendas</div><div class="lp-meta-val">${NUM(a.vendas)}</div></div>
-            <div class="lp-meta-stat"><div class="lp-meta-lbl">CPA</div><div class="lp-meta-val">${BRL(a.cpa)}</div></div>
-            <div class="lp-meta-stat"><div class="lp-meta-lbl">Conversão</div><div class="lp-meta-val">${PCT(a.conv)}</div></div>
-          </div></div><div class="lp-funnel">`;
-        for(const s of steps){ const w=Math.max(5,(s.v/maxV)*100);
-          h+=`<div class="lp-step"><div class="lp-step-top"><span class="lp-step-n">${s.n}</span>${s.rate?`<span class="lp-step-rate">▸ ${s.rate}</span>`:''}</div>
-            <div class="lp-step-bar"><i style="width:${w}%"></i><span class="lp-step-v">${NUM(s.v)}</span></div></div>`;
+        let fn='<div class="fn">';
+        for(let si=0;si<steps.length;si++){ const s=steps[si]; const tl=(100-s.wt)/2,tr=(100+s.wt)/2,br=(100+s.wb)/2,bl=(100-s.wb)/2; const L=34+si*8;
+          fn+=`<div class="fn-seg" style="clip-path:polygon(${tl}% 0,${tr}% 0,${br}% 100%,${bl}% 100%);background:linear-gradient(180deg,hsla(285,52%,${L}%,.92),hsla(285,52%,${L-7}%,.86))"><div class="fn-lbl">${s.n}</div><div class="fn-val">${NUM(s.v)}</div></div>`;
+          if(s.rate) fn+=`<div class="fn-rate"><span class="fn-pill">${s.rate}</span></div>`;
         }
-        h+=`</div></div>`;
-      }
+        fn+='</div>';
+        h+=`<div class="lp-panel"><div class="lp-header"><div class="lp-header-left"><div class="lp-header-name">${lp.nome}</div><a class="lp-header-url" href="${lp.url}" target="_blank">${lp.url.replace('https://','')}</a></div>
+          <div class="lp-header-right">
+            <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(a.investido)}</div></div>
+            <div><div class="lp-meta-lbl">CPA</div><div class="lp-meta-val">${BRL(a.cpa)}</div></div>
+            <div><div class="lp-meta-lbl">Tx Conv PV→V</div><div class="lp-meta-val accent">${PCT(div(a.vendas,a.pv)*100)}</div></div>
+          </div></div>
+          <div class="lp-body"><div class="lp-funnel-col">${fn}</div><div class="lp-charts-col">
+            <div class="lp-chart-card"><div class="lp-chart-title">Connect Rate</div><div class="lp-chart-h"><canvas id="lpA${i}"></canvas></div></div>
+            <div class="lp-chart-card"><div class="lp-chart-title">Checkout Rate (PV→Checkout)</div><div class="lp-chart-h"><canvas id="lpB${i}"></canvas></div></div>
+            <div class="lp-chart-card"><div class="lp-chart-title">Taxa Conversão (Checkout→Vendas)</div><div class="lp-chart-h"><canvas id="lpC${i}"></canvas></div></div>
+            <div class="lp-chart-card"><div class="lp-chart-title">Taxa Conversão (PV→Vendas)</div><div class="lp-chart-h"><canvas id="lpD${i}"></canvas></div></div>
+          </div></div></div>`;
+        jobs.push({i,d});
+      });
       h+=`</div>`;
       document.getElementById('body').innerHTML=h;
+      jobs.forEach(({i,d})=>{ lpLine('lpA'+i,d.labels,d.connect,'#c07be0'); lpLine('lpB'+i,d.labels,d.checkout,'#e0a75e'); lpLine('lpC'+i,d.labels,d.txconv,'#a855c8'); lpLine('lpD'+i,d.labels,d.txconvpv,'#8b7bef'); });
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
 
