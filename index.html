@@ -376,7 +376,7 @@
       }
 
       // ── 3) Gráfico por dia (largura total) ──
-      h+=`<div class="lbl">Vendas e Investimento por Dia</div>
+      h+=`<div class="lbl">Vendas por Dia — Orgânico × Ads + Investimento</div>
         <div class="chart-card"><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>`;
 
       // ── 4) Origem dos cadastros (UTMs) — 3 colunas ──
@@ -390,20 +390,22 @@
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
 
-      // Charts — vendas org/dia (barras) + investido/dia (linha). Só dias com dado; vendas nunca negativas.
-      const invByDay={}; for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
+      // Charts — vendas Orgânico (verde) + Ads (roxo) empilhadas + investido/dia (linha). Só dias com dado.
+      const invByDay={}, pagoByDay={};
+      for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; pagoByDay[kd]=(pagoByDay[kd]||0)+r.compras; }
       const orgByDay={}; ((DATA.metricas&&DATA.metricas.series)||[]).forEach(s=>{ const v=Math.max(0, s.paceDia||0); if(v>0) orgByDay[dkey(s.date)]=v; });
-      const _dset=new Set([...Object.keys(invByDay).filter(k=>invByDay[k]>0), ...Object.keys(orgByDay)]);
+      const _dset=new Set([...Object.keys(invByDay).filter(k=>invByDay[k]>0||pagoByDay[k]>0), ...Object.keys(orgByDay)]);
       const _dates=[..._dset].sort();
       const dlabels=_dates.map(k=>{const p=k.split('-');return p[2]+'/'+p[1];});
       charts.push(new Chart(document.getElementById('cDia'),{
         data:{ labels:dlabels, datasets:[
-          { type:'bar', label:'Vendas Org/dia', data:_dates.map(k=>orgByDay[k]||0), backgroundColor:'#b565d6cc', borderRadius:5, yAxisID:'y' },
+          { type:'bar', label:'Vendas Orgânicas', data:_dates.map(k=>orgByDay[k]||0), backgroundColor:'#4ade80cc', borderColor:'#4ade80', borderWidth:0, borderRadius:4, stack:'v', yAxisID:'y' },
+          { type:'bar', label:'Vendas Ads', data:_dates.map(k=>pagoByDay[k]||0), backgroundColor:'#b565d6cc', borderRadius:4, stack:'v', yAxisID:'y' },
           { type:'line', label:'Investido/dia', data:_dates.map(k=>invByDay[k]||0), borderColor:'#e6ccf5', backgroundColor:'rgba(230,204,245,.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#e6ccf5', tension:.35, yAxisID:'y1' },
         ]},
         options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-          plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label.indexOf('Investido')>=0?` Investido: `+BRL(c.parsed.y):` Vendas: ${c.parsed.y}`}} },
-          scales:{ x:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:11}}}, y:{grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0'},beginAtZero:true},
+          plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label.indexOf('Investido')>=0?` Investido: `+BRL(c.parsed.y):` ${c.dataset.label}: ${c.parsed.y}`}} },
+          scales:{ x:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:11}}}, y:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0'},beginAtZero:true},
             y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#e6ccf5',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
       }));
       pie('cOrig', topBy(urows,'source',8));
