@@ -81,6 +81,17 @@
     td:first-child,th:first-child{ text-align:left; max-width:320px; white-space:normal; }
     tr:last-child td{ border-bottom:none; }
     .vlink{ color:var(--purple-light); text-decoration:none; font-size:.74rem; }
+    .w3filter{ width:100%; max-width:340px; margin:0 0 14px; padding:11px 14px; background:rgba(30,20,44,.7); border:1px solid rgba(150,95,190,.2); border-radius:10px; color:var(--text); font-family:inherit; font-size:.85rem; }
+    .w3filter::placeholder{ color:var(--muted); }
+    .al{ display:inline-block; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:7px; white-space:nowrap; }
+    .al-ok{ color:#8ef0b0; background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.4); }
+    .al-alto{ color:#f5cd6b; background:rgba(245,158,11,.14); border:1px solid rgba(245,158,11,.4); }
+    .al-crit{ color:#f79a9a; background:rgba(239,68,68,.16); border:1px solid rgba(239,68,68,.45); }
+    .al-sem{ color:#c9b8d6; background:rgba(120,90,150,.18); border:1px solid rgba(150,95,190,.35); }
+    .tp{ display:inline-block; font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:7px; white-space:nowrap; }
+    .tp-q{ color:#f5b78a; background:rgba(245,120,60,.14); border:1px solid rgba(245,120,60,.4); }
+    .tp-f{ color:#9cc7f0; background:rgba(90,150,240,.14); border:1px solid rgba(90,150,240,.4); }
+    .tp-n{ color:var(--muted); }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
@@ -108,6 +119,9 @@
       <button class="tab active" data-p="geral" onclick="setTab(this)">Geral</button>
       <button class="tab" data-p="malu" onclick="setTab(this)">Malu</button>
       <button class="tab" data-p="hire" onclick="setTab(this)">Hire</button>
+      <button class="tab" data-p="campanhas" onclick="setTab(this)">Campanhas</button>
+      <button class="tab" data-p="publicos" onclick="setTab(this)">Públicos</button>
+      <button class="tab" data-p="criativos" onclick="setTab(this)">Criativos</button>
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
@@ -383,8 +397,62 @@
         plugins:[valPlugin] }));
     }
 
-    function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); profile=el.dataset.p; render(); }
-    function setPreset(el){ document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active')); el.classList.add('active'); presetDays=el.dataset.d; render(); }
+    let view='geral';
+    function route(){
+      if(view==='campanhas') return renderCampanhas();
+      if(view==='publicos') return renderPublicos();
+      if(view==='criativos') return renderCriativos();
+      profile=view; render();
+    }
+    function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); view=el.dataset.p; route(); }
+    function setPreset(el){ document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active')); el.classList.add('active'); presetDays=el.dataset.d; route(); }
+
+    // ── Campanhas / Públicos / Criativos ────────────────────────────────────────
+    function campType(name){ if(/_Q(\b|_)|\[Q\]|QUENTE|RMKT|REMARK/i.test(name)) return 'quente'; if(/_F(\b|_)|\[F\]|\bFRIO\b/i.test(name)) return 'frio'; return '—'; }
+    function campaigns(rows){
+      const by={}, metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
+      for(const r of rows){ const key=r.campanha||'—'; let o=by[key];
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,vendas:0};
+        o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.vendas+=r.compras;
+      }
+      return Object.values(by).map(o=>{ const cpa=div(o.cost,o.vendas);
+        let al='ok'; if(o.vendas===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
+        return { nome:o.nome, tipo:campType(o.nome), investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
+          cliques:o.clk, pv:o.pv, cr:div(o.pv,o.clk)*100, checkout:o.ic, vendas:o.vendas, txconv:div(o.vendas,o.ic)*100, cpa, al };
+      }).sort((a,b)=>b.investido-a.investido);
+    }
+    let _campFilter='';
+    function renderCampanhas(){
+      killCharts();
+      const rows=DATA.malu.concat(DATA.hire).filter(r=>inRange(r.date));
+      const camps=campaigns(rows);
+      const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
+      const TP={quente:['🔥 Quente','tp-q'],frio:['❄ Frio','tp-f'],'—':['—','tp-n']};
+      let h=`<div class="lbl">Performance por Campanha (${camps.length}) · meta CPA R$ ${((DATA.metas&&DATA.metas.cpa)||71).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <input class="w3filter" placeholder="Filtrar por nome…" value="${_campFilter}" oninput="_campFilter=this.value.toLowerCase(); document.querySelectorAll('.crow').forEach(function(tr){ tr.style.display=tr.dataset.n.indexOf(_campFilter)>=0?'':'none'; });">
+        <div class="twrap"><table><thead><tr>
+        <th>Campanha</th><th>Tipo</th><th>Investido</th><th>Impr.</th><th>CTR</th><th>Cliques</th><th>PV</th><th>CR%</th><th>Checkout</th><th>Vendas</th><th>Tx.Conv</th><th>CPA</th><th>Alerta</th>
+      </tr></thead><tbody>`;
+      if(!camps.length) h+=`<tr><td colspan="13" class="empty">Sem dados no período</td></tr>`;
+      else for(const c of camps){ const a=AL[c.al], t=TP[c.tipo];
+        h+=`<tr class="crow" data-n="${(c.nome||'').toLowerCase()}"><td title="${c.nome}">${c.nome}</td>
+          <td><span class="tp ${t[1]}">${t[0]}</span></td><td>${BRL(c.investido)}</td><td>${NUM(c.imp)}</td><td>${PCT(c.ctr)}</td>
+          <td>${NUM(c.cliques)}</td><td>${NUM(c.pv)}</td><td>${PCT(c.cr)}</td><td>${NUM(c.checkout)}</td><td>${NUM(c.vendas)}</td>
+          <td>${PCT(c.txconv)}</td><td>${BRL(c.cpa)}</td><td><span class="al ${a[1]}">${a[0]}</span></td></tr>`;
+      }
+      h+=`</tbody></table></div>`;
+      document.getElementById('body').innerHTML=h;
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
+    function _hbarTab(title, items, cid){
+      killCharts();
+      const hgt=Math.max(300, items.length*34+20);
+      document.getElementById('body').innerHTML=`<div class="lbl">${title}</div><div class="chart-card"><div class="chart-box" style="height:${hgt}px"><canvas id="${cid}"></canvas></div></div>`;
+      hbar(cid, items);
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
+    function renderPublicos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Públicos — leads por utm_term ('+u.length+' leads)', topBy(u,'term',15), 'cPubT'); }
+    function renderCriativos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Criativos — leads por anúncio (utm_content)', topBy(u,'content',15), 'cCri'); }
 
     async function loadAll(){
       document.getElementById('body').innerHTML='<div class="loading">Carregando dados da planilha…</div>';
@@ -405,7 +473,7 @@
         const cot = DATA.metas.cotacao || 5.16;
         DATA.malu.forEach(r=>{ r.cost *= cot; });
         DATA.hire.forEach(r=>{ r.cost *= cot; });
-        render();
+        route();
       }catch(e){
         document.getElementById('body').innerHTML='<div class="empty err">Erro ao carregar: '+e.message+'</div>';
       }
