@@ -390,14 +390,16 @@
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
 
-      // Charts — vendas orgânicas/dia (barras) + investido/dia (linha)
+      // Charts — vendas org/dia (barras) + investido/dia (linha). Só dias com dado; vendas nunca negativas.
       const invByDay={}; for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
-      const ms=((DATA.metricas&&DATA.metricas.series)||[]).filter(s=>s.date>=cutoff());
-      const dlabels=ms.map(s=>String(s.date.getDate()).padStart(2,'0')+'/'+String(s.date.getMonth()+1).padStart(2,'0'));
+      const orgByDay={}; ((DATA.metricas&&DATA.metricas.series)||[]).forEach(s=>{ const v=Math.max(0, s.paceDia||0); if(v>0) orgByDay[dkey(s.date)]=v; });
+      const _dset=new Set([...Object.keys(invByDay).filter(k=>invByDay[k]>0), ...Object.keys(orgByDay)]);
+      const _dates=[..._dset].sort();
+      const dlabels=_dates.map(k=>{const p=k.split('-');return p[2]+'/'+p[1];});
       charts.push(new Chart(document.getElementById('cDia'),{
         data:{ labels:dlabels, datasets:[
-          { type:'bar', label:'Vendas Org/dia', data:ms.map(s=>s.paceDia), backgroundColor:'#b565d6cc', borderRadius:5, yAxisID:'y' },
-          { type:'line', label:'Investido/dia', data:ms.map(s=>invByDay[dkey(s.date)]||0), borderColor:'#e6ccf5', backgroundColor:'rgba(230,204,245,.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#e6ccf5', tension:.35, yAxisID:'y1' },
+          { type:'bar', label:'Vendas Org/dia', data:_dates.map(k=>orgByDay[k]||0), backgroundColor:'#b565d6cc', borderRadius:5, yAxisID:'y' },
+          { type:'line', label:'Investido/dia', data:_dates.map(k=>invByDay[k]||0), borderColor:'#e6ccf5', backgroundColor:'rgba(230,204,245,.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#e6ccf5', tension:.35, yAxisID:'y1' },
         ]},
         options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
           plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label.indexOf('Investido')>=0?` Investido: `+BRL(c.parsed.y):` Vendas: ${c.parsed.y}`}} },
