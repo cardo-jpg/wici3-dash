@@ -413,11 +413,20 @@
       const el=document.getElementById(id); if(!el) return;
       const colors=['#c07be0','#8b5cf6','#a855c8','#6a2585','#d9b8ec','#7b3f98','#b565d6','#5b3f88'];
       const tot=items.reduce((s,i)=>s+i.count,0)||1;
+      const labelPlugin={ id:'pieL_'+id, afterDatasetsDraw(ch){ const ctx=ch.ctx; const ds=ch.data.datasets[0].data; const t=ds.reduce((s,v)=>s+v,0)||1;
+        ctx.save(); ctx.font='800 12px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ch.getDatasetMeta(0).data.forEach((arc,i)=>{ const pct=ds[i]/t*100; if(pct<4) return;
+          const ang=(arc.startAngle+arc.endAngle)/2, r=(arc.innerRadius+arc.outerRadius)/2;
+          const x=arc.x+Math.cos(ang)*r, y=arc.y+Math.sin(ang)*r;
+          ctx.fillStyle='#fff'; ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=4; ctx.fillText(pct.toFixed(1)+'%', x, y);
+        }); ctx.restore();
+      }};
       charts.push(new Chart(el,{ type:'doughnut',
         data:{ labels:items.map(i=>i.label.length>22?i.label.slice(0,21)+'…':i.label), datasets:[{ data:items.map(i=>i.count), backgroundColor:colors, borderColor:'#0d0912', borderWidth:2 }] },
         options:{ responsive:true, maintainAspectRatio:false, cutout:'56%',
           plugins:{ legend:{position:'right',labels:{color:'#cbb8dd',font:{size:12},boxWidth:12,padding:9}},
-            tooltip:{callbacks:{label:c=>' '+c.label+': '+NUM(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'}} } }
+            tooltip:{callbacks:{label:c=>' '+c.label+': '+NUM(c.parsed)+' ('+(c.parsed/tot*100).toFixed(1)+'%)'}} } },
+        plugins:[labelPlugin]
       }));
     }
     function hbar(id, items){
