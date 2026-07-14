@@ -93,6 +93,22 @@
     .tp-f{ color:#9cc7f0; background:rgba(90,150,240,.14); border:1px solid rgba(90,150,240,.4); }
     .tp-n{ color:var(--muted); }
     .lp-win{ color:#8ef0b0; font-weight:800; }
+    .lp-grid{ display:flex; flex-direction:column; gap:22px; }
+    .lp-panel{ background:linear-gradient(165deg, rgba(44,27,64,.42), rgba(20,14,30,.7)); border:1px solid rgba(150,95,190,.18); border-radius:16px; padding:20px 22px; box-shadow:0 4px 20px rgba(0,0,0,.25); }
+    .lp-header{ display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid rgba(150,95,190,.14); }
+    .lp-header-name{ font-size:1.1rem; font-weight:800; }
+    .lp-header-url{ display:block; font-size:.74rem; color:var(--purple-light); text-decoration:none; opacity:.7; margin-top:3px; }
+    .lp-header-url:hover{ opacity:1; }
+    .lp-header-right{ display:flex; gap:26px; flex-wrap:wrap; }
+    .lp-meta-lbl{ font-size:.64rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+    .lp-meta-val{ font-size:1.4rem; font-weight:800; margin-top:2px; }
+    .lp-funnel{ display:flex; flex-direction:column; gap:13px; }
+    .lp-step-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+    .lp-step-n{ font-size:.84rem; font-weight:600; }
+    .lp-step-rate{ font-size:.76rem; color:var(--purple-light); font-weight:700; }
+    .lp-step-bar{ position:relative; height:36px; background:rgba(255,255,255,.05); border-radius:9px; overflow:hidden; }
+    .lp-step-bar > i{ display:block; height:100%; background:linear-gradient(90deg,#6a2585,#c07be0); border-radius:9px; transition:width .5s; }
+    .lp-step-v{ position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:.88rem; font-weight:800; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.5); }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
@@ -358,15 +374,6 @@
         <div class="chart-card"><div class="chart-title">Públicos</div><div class="chart-box tall"><canvas id="cPub"></canvas></div></div>
       </div>`;
 
-      // Anúncios
-      const ads=anuncios(mrows);
-      h+=`<div class="lbl">Por anúncio (${ads.length})</div><div class="twrap"><table><thead><tr>
-        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>CPA</th><th></th>
-      </tr></thead><tbody>`;
-      if(!ads.length) h+=`<tr><td colspan="9" class="empty">Sem dados no período</td></tr>`;
-      else for(const a of ads) h+=`<tr><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver</a>`:'—'}</td></tr>`;
-      h+=`</tbody></table></div>`;
-
       document.getElementById('body').innerHTML=h;
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
@@ -454,10 +461,39 @@
       hbar(cid, items);
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
-    function renderPublicos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Públicos — leads por utm_term ('+u.length+' leads)', topBy(u,'term',15), 'cPubT'); }
-    function renderCriativos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Criativos — leads por anúncio (utm_content)', topBy(u,'content',15), 'cCri'); }
+    function renderPublicos(){
+      killCharts();
+      const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date));
+      const items=topBy(u,'term',30); const total=items.reduce((s,i)=>s+i.count,0);
+      let h=`<div class="lbl">Públicos — Cadastros por utm_term (${NUM(total)})</div>
+        <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.purow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
+        <div class="twrap"><table><thead><tr><th style="text-align:left">Público</th><th>Cadastros</th><th>% do total</th></tr></thead><tbody>`;
+      if(!items.length) h+=`<tr><td colspan="3" class="empty">Sem dados no período</td></tr>`;
+      else for(const i of items) h+=`<tr class="purow" data-n="${(i.label||'').toLowerCase()}"><td style="text-align:left">${i.label}</td><td>${NUM(i.count)}</td><td>${PCT(div(i.count,total)*100)}</td></tr>`;
+      h+=`</tbody></table></div>`;
+      document.getElementById('body').innerHTML=h;
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
+    function renderCriativos(){
+      killCharts();
+      const ads=anuncios(DATA.malu.concat(DATA.hire).filter(r=>inRange(r.date)));
+      const metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
+      const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
+      let h=`<div class="lbl">Criativos — Performance por Anúncio (${ads.length})</div>
+        <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.crrow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
+        <div class="twrap"><table><thead><tr>
+        <th>Anúncio</th><th>Investido</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>Init. Checkout</th><th>Vendas</th><th>CPA</th><th>Alerta</th><th>Link</th>
+      </tr></thead><tbody>`;
+      if(!ads.length) h+=`<tr><td colspan="10" class="empty">Sem dados no período</td></tr>`;
+      else for(const a of ads){ let al='ok'; if(a.vendas===0) al='sem'; else if(a.cpa>metaCPA*1.5) al='critico'; else if(a.cpa>metaCPA) al='alto'; const b=AL[al];
+        h+=`<tr class="crrow" data-n="${(a.nome||'').toLowerCase()}"><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver criativo</a>`:'—'}</td></tr>`;
+      }
+      h+=`</tbody></table></div>`;
+      document.getElementById('body').innerHTML=h;
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
 
-    // LP: Malu (malu-ads-c) usa campanhas [MALU]; Hire (hire-ads-c) usa [HIRE]. Compara o funil das duas.
+    // LP: Malu (malu-ads-c) = campanhas [MALU]; Hire (hire-ads-c) = [HIRE]. Funil por LP (estilo WICI2).
     function lpAgg(rows){
       let cost=0,imp=0,clk=0,pv=0,ic=0,vd=0;
       for(const r of rows){ cost+=r.cost;imp+=r.impressions;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;vd+=r.compras; }
@@ -466,29 +502,34 @@
     }
     function renderLP(){
       killCharts();
-      const a=lpAgg(DATA.malu.filter(r=>inRange(r.date))), b=lpAgg(DATA.hire.filter(r=>inRange(r.date)));
-      const rows=[
-        ['Investido', a.investido, b.investido, BRL, 0],
-        ['Impressões', a.imp, b.imp, NUM, 0],
-        ['Cliques', a.cliques, b.cliques, NUM, 0],
-        ['CTR', a.ctr, b.ctr, PCT, 1],
-        ['Page views (abriram a página)', a.pv, b.pv, NUM, 0],
-        ['Connect rate · clique→página', a.connect, b.connect, PCT, 1],
-        ['Initiate Checkout', a.ic, b.ic, NUM, 0],
-        ['Tx. Checkout · página→checkout', a.tx_checkout, b.tx_checkout, PCT, 1],
-        ['Vendas', a.vendas, b.vendas, NUM, 1],
-        ['Tx. Venda · checkout→venda', a.tx_venda, b.tx_venda, PCT, 1],
-        ['Conversão total · clique→venda', a.conv, b.conv, PCT, 1],
-        ['CPA', a.cpa, b.cpa, BRL, -1],
+      const lps=[
+        {nome:'LP Malu', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-malu-ads-c', a:lpAgg(DATA.malu.filter(r=>inRange(r.date)))},
+        {nome:'LP Hire', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-hire-ads-c', a:lpAgg(DATA.hire.filter(r=>inRange(r.date)))},
       ];
-      let h=`<div class="lbl">Comparação de LP · Malu (malu-ads-c) × Hire (hire-ads-c)</div>
-        <div class="twrap"><table><thead><tr><th style="text-align:left">Métrica</th><th>LP Malu</th><th>LP Hire</th></tr></thead><tbody>`;
-      for(const row of rows){ const lbl=row[0],va=row[1],vb=row[2],fmt=row[3],dir=row[4];
-        let ca='',cb='';
-        if(dir!==0 && va!==vb && va>0 && vb>0){ const aWins = dir>0 ? va>vb : va<vb; if(aWins) ca='lp-win'; else cb='lp-win'; }
-        h+=`<tr><td style="text-align:left">${lbl}</td><td class="${ca}">${fmt(va)}</td><td class="${cb}">${fmt(vb)}</td></tr>`;
+      let h=`<div class="lbl">Landing Pages — Funil por LP</div><div class="lp-grid">`;
+      for(const lp of lps){ const a=lp.a; const maxV=a.imp||1;
+        const steps=[
+          {n:'Impressões', v:a.imp, rate:''},
+          {n:'Cliques', v:a.cliques, rate:'CTR '+PCT(a.ctr)},
+          {n:'Page views', v:a.pv, rate:'Connect '+PCT(a.connect)},
+          {n:'Initiate Checkout', v:a.ic, rate:'Checkout '+PCT(a.tx_checkout)},
+          {n:'Vendas', v:a.vendas, rate:'Venda '+PCT(a.tx_venda)},
+        ];
+        h+=`<div class="lp-panel"><div class="lp-header">
+          <div class="lp-header-left"><div class="lp-header-name">${lp.nome}</div><a class="lp-header-url" href="${lp.url}" target="_blank">${lp.url.replace('https://','')}</a></div>
+          <div class="lp-header-right">
+            <div class="lp-meta-stat"><div class="lp-meta-lbl">Investido</div><div class="lp-meta-val">${BRL(a.investido)}</div></div>
+            <div class="lp-meta-stat"><div class="lp-meta-lbl">Vendas</div><div class="lp-meta-val">${NUM(a.vendas)}</div></div>
+            <div class="lp-meta-stat"><div class="lp-meta-lbl">CPA</div><div class="lp-meta-val">${BRL(a.cpa)}</div></div>
+            <div class="lp-meta-stat"><div class="lp-meta-lbl">Conversão</div><div class="lp-meta-val">${PCT(a.conv)}</div></div>
+          </div></div><div class="lp-funnel">`;
+        for(const s of steps){ const w=Math.max(5,(s.v/maxV)*100);
+          h+=`<div class="lp-step"><div class="lp-step-top"><span class="lp-step-n">${s.n}</span>${s.rate?`<span class="lp-step-rate">▸ ${s.rate}</span>`:''}</div>
+            <div class="lp-step-bar"><i style="width:${w}%"></i><span class="lp-step-v">${NUM(s.v)}</span></div></div>`;
+        }
+        h+=`</div></div>`;
       }
-      h+=`</tbody></table></div>`;
+      h+=`</div>`;
       document.getElementById('body').innerHTML=h;
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
