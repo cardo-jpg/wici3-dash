@@ -379,8 +379,8 @@
       h+=`<div class="lbl">Vendas e Investimento por Dia</div>
         <div class="chart-card"><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>`;
 
-      // ── 4) Posicionamento dos Leads (UTMs) — 3 colunas ──
-      h+=`<div class="lbl">Posicionamento dos Leads (UTMs)</div><div class="charts3">
+      // ── 4) Origem dos cadastros (UTMs) — 3 colunas ──
+      h+=`<div class="lbl">Origem dos Cadastros (UTMs)</div><div class="charts3">
         <div class="chart-card"><div class="chart-title">Origem</div><div class="chart-box tall"><canvas id="cOrig"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">Top Anúncios</div><div class="chart-box tall"><canvas id="cAds"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">Públicos</div><div class="chart-box tall"><canvas id="cPub"></canvas></div></div>
@@ -433,7 +433,7 @@
       const el=document.getElementById(id); if(!el) return;
       const valPlugin={ id:'v'+id, afterDatasetsDraw(ch){ const c=ch.ctx; c.save(); ch.getDatasetMeta(0).data.forEach((bar,i)=>{ const v=ch.data.datasets[0].data[i]; c.fillStyle='rgba(255,255,255,.85)'; c.font='600 12px system-ui'; c.textAlign='left'; c.textBaseline='middle'; c.fillText(v, bar.x+6, bar.y); }); c.restore(); } };
       charts.push(new Chart(el,{ type:'bar', data:{ labels:items.map(i=>i.label.length>26?i.label.slice(0,25)+'…':i.label), datasets:[{ data:items.map(i=>i.count), backgroundColor:'#b565d6cc', borderRadius:5, barThickness:20 }] },
-        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x+' leads'}}},
+        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.x+' cadastros'}}},
           scales:{ x:{display:false,beginAtZero:true}, y:{grid:{display:false},ticks:{color:'#ccc',font:{size:12}}} }, layout:{padding:{right:34}} },
         plugins:[valPlugin] }));
     }
