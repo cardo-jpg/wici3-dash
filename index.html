@@ -92,6 +92,7 @@
     .tp-q{ color:#f5b78a; background:rgba(245,120,60,.14); border:1px solid rgba(245,120,60,.4); }
     .tp-f{ color:#9cc7f0; background:rgba(90,150,240,.14); border:1px solid rgba(90,150,240,.4); }
     .tp-n{ color:var(--muted); }
+    .lp-win{ color:#8ef0b0; font-weight:800; }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
@@ -122,6 +123,7 @@
       <button class="tab" data-p="campanhas" onclick="setTab(this)">Campanhas</button>
       <button class="tab" data-p="publicos" onclick="setTab(this)">Públicos</button>
       <button class="tab" data-p="criativos" onclick="setTab(this)">Criativos</button>
+      <button class="tab" data-p="lp" onclick="setTab(this)">LP</button>
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
@@ -402,6 +404,7 @@
       if(view==='campanhas') return renderCampanhas();
       if(view==='publicos') return renderPublicos();
       if(view==='criativos') return renderCriativos();
+      if(view==='lp') return renderLP();
       profile=view; render();
     }
     function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); view=el.dataset.p; route(); }
@@ -453,6 +456,42 @@
     }
     function renderPublicos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Públicos — leads por utm_term ('+u.length+' leads)', topBy(u,'term',15), 'cPubT'); }
     function renderCriativos(){ const u=DATA.umalu.concat(DATA.uhire).filter(r=>inRange(r.date)); _hbarTab('Criativos — leads por anúncio (utm_content)', topBy(u,'content',15), 'cCri'); }
+
+    // LP: Malu (malu-ads-c) usa campanhas [MALU]; Hire (hire-ads-c) usa [HIRE]. Compara o funil das duas.
+    function lpAgg(rows){
+      let cost=0,imp=0,clk=0,pv=0,ic=0,vd=0;
+      for(const r of rows){ cost+=r.cost;imp+=r.impressions;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;vd+=r.compras; }
+      return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:div(pv,clk)*100,
+        tx_checkout:div(ic,pv)*100, tx_venda:div(vd,ic)*100, conv:div(vd,clk)*100, cpa:div(cost,vd) };
+    }
+    function renderLP(){
+      killCharts();
+      const a=lpAgg(DATA.malu.filter(r=>inRange(r.date))), b=lpAgg(DATA.hire.filter(r=>inRange(r.date)));
+      const rows=[
+        ['Investido', a.investido, b.investido, BRL, 0],
+        ['Impressões', a.imp, b.imp, NUM, 0],
+        ['Cliques', a.cliques, b.cliques, NUM, 0],
+        ['CTR', a.ctr, b.ctr, PCT, 1],
+        ['Page views (abriram a página)', a.pv, b.pv, NUM, 0],
+        ['Connect rate · clique→página', a.connect, b.connect, PCT, 1],
+        ['Initiate Checkout', a.ic, b.ic, NUM, 0],
+        ['Tx. Checkout · página→checkout', a.tx_checkout, b.tx_checkout, PCT, 1],
+        ['Vendas', a.vendas, b.vendas, NUM, 1],
+        ['Tx. Venda · checkout→venda', a.tx_venda, b.tx_venda, PCT, 1],
+        ['Conversão total · clique→venda', a.conv, b.conv, PCT, 1],
+        ['CPA', a.cpa, b.cpa, BRL, -1],
+      ];
+      let h=`<div class="lbl">Comparação de LP · Malu (malu-ads-c) × Hire (hire-ads-c)</div>
+        <div class="twrap"><table><thead><tr><th style="text-align:left">Métrica</th><th>LP Malu</th><th>LP Hire</th></tr></thead><tbody>`;
+      for(const row of rows){ const lbl=row[0],va=row[1],vb=row[2],fmt=row[3],dir=row[4];
+        let ca='',cb='';
+        if(dir!==0 && va!==vb && va>0 && vb>0){ const aWins = dir>0 ? va>vb : va<vb; if(aWins) ca='lp-win'; else cb='lp-win'; }
+        h+=`<tr><td style="text-align:left">${lbl}</td><td class="${ca}">${fmt(va)}</td><td class="${cb}">${fmt(vb)}</td></tr>`;
+      }
+      h+=`</tbody></table></div>`;
+      document.getElementById('body').innerHTML=h;
+      document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
 
     async function loadAll(){
       document.getElementById('body').innerHTML='<div class="loading">Carregando dados da planilha…</div>';
