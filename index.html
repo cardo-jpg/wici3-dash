@@ -316,10 +316,7 @@
         +(mc?card('START ADS', NUM(mc.start_ads)):'')
         +(mc?card('VIP ADS', NUM(mc.vip_ads)):'')
         +card('CPA', BRL(k.cpa))
-        +card('CTR', PCT(k.ctr))
-        +card('CPC', BRL(k.cpc))
-        +card('CPM', BRL(k.cpm))
-        +card('Initiate Checkout', NUM(k.initiate_checkout));
+        +card('CTR', PCT(k.ctr));
       h+=`</div>`;
 
       // ── 2) Vendas Orgânicas ──
