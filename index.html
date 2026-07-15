@@ -413,14 +413,17 @@
       // Vendas Ads vêm da planilha MÉTRICAS (o Meta sub-reporta).
       const _vt  = viewTarget(mrows);
       const vAds = _vt==null ? k.vendas : _vt;
-      // Média/dia sobre os dias que a planilha tem dado (não sobre START da campanha,
-      // senão o orgânico — que começou antes — fica com média errada).
-      const dd = mc ? mc.dias : daysElapsed;
+      // Média/dia: cada métrica divide pelos dias que ELA rodou. O tráfego começou
+      // em 13/07 e o orgânico em 10/07 — dividir os dois pelos mesmos dias
+      // subestimaria o ads (diluiria as vendas por dias em que ele nem existia).
+      const _ser  = ((DATA.metricas&&DATA.metricas.series)||[]).filter(s=>s.hasData);
+      const ddTot = mc ? mc.dias : daysElapsed;                          // dias com dado
+      const ddAds = Math.max(1, _ser.filter(s=>s.ads>0).length);         // dias com tráfego
       let h='';
       h+=`<div class="gauges">`;
-      h+=gauge('g1','Vendas Tráfego', vAds, metaTraf, NUM, NUM(Math.round(vAds/dd)), NUM(Math.round(metaTraf/daysTotal)));
-      h+=gauge('g2','Vendas Orgânico', orgSales, metaOrg, NUM, NUM(Math.round(orgSales/dd)), NUM(Math.round(metaOrg/daysTotal)));
-      h+=gauge('g3','Total Geral', ingressos, metaIng, NUM, NUM(Math.round(ingressos/dd)), NUM(Math.round(metaIng/daysTotal)));
+      h+=gauge('g1','Vendas Tráfego', vAds, metaTraf, NUM, NUM(Math.round(vAds/ddAds)), NUM(Math.round(metaTraf/daysTotal)));
+      h+=gauge('g2','Vendas Orgânico', orgSales, metaOrg, NUM, NUM(Math.round(orgSales/ddTot)), NUM(Math.round(metaOrg/daysTotal)));
+      h+=gauge('g3','Total Geral', ingressos, metaIng, NUM, NUM(Math.round(ingressos/ddTot)), NUM(Math.round(metaIng/daysTotal)));
       h+=`</div>`;
 
       // ── 1) Tráfego · Ads (Meta Ads) ──
