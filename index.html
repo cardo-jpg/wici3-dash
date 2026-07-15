@@ -30,6 +30,13 @@
     .presets{ display:flex; background:var(--surface); border:1px solid var(--border); border-radius:9px; overflow:hidden; flex-wrap:wrap; }
     .preset{ padding:7px 12px; font-size:.78rem; cursor:pointer; color:var(--muted); border:none; background:none; font-family:inherit; }
     .preset.active{ background:var(--purple); color:#fff; }
+    .dates{ display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:4px 8px; }
+    .dlbl{ font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .dates input[type=date]{ background:transparent; border:1px solid var(--border); border-radius:6px; color:#fff;
+      font-family:inherit; font-size:.76rem; padding:4px 6px; color-scheme:dark; cursor:pointer; }
+    .dates input[type=date]:focus{ outline:none; border-color:var(--purple); }
+    .dclear{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:.9rem; padding:2px 4px; font-family:inherit; }
+    .dclear:hover{ color:#fff; }
     .updated{ font-size:.72rem; color:var(--muted); }
     .btn{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:7px 13px; font-size:.78rem; cursor:pointer; font-family:inherit; }
     .btn:hover{ background:#ffffff12; }
@@ -138,6 +145,11 @@
           <button class="preset" data-d="7" onclick="setPreset(this)">7 dias</button>
           <button class="preset" data-d="14" onclick="setPreset(this)">14 dias</button>
           <button class="preset active" data-d="all" onclick="setPreset(this)">Tudo</button>
+        </div>
+        <div class="dates">
+          <span class="dlbl">De</span><input type="date" id="dDe" onchange="setDates()">
+          <span class="dlbl">até</span><input type="date" id="dAte" onchange="setDates()">
+          <button class="dclear" id="dClear" onclick="clearDates()" style="display:none">✕</button>
         </div>
         <button class="btn" onclick="loadAll()">↻ Atualizar</button>
         <div class="updated" id="updated"></div>
@@ -255,8 +267,11 @@
       for(const r of rows){
         const c=r.c||[]; const d=cDate(c[0]); if(!d) continue;
         const org=cNum(c[3]), total=cNum(c[12]), has=(org>0||total>0);
+        // Todas as colunas abaixo são ACUMULADAS na planilha — viram valor/dia via
+        // cumDaily(), que é o que deixa o filtro de data funcionar em cima delas.
         series.push({ date:d, org, paceDia:cNum(c[4]), total,
-          ads:cNum(c[10])+cNum(c[11]), hasData:has });
+          ads:cNum(c[10])+cNum(c[11]), startAds:cNum(c[10]), vipAds:cNum(c[11]),
+          startOrg:cNum(c[8]), vipOrg:cNum(c[9]), waStart:cNum(c[1]), waVip:cNum(c[2]), hasData:has });
         if(has){ dias++;
           latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
             vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
@@ -277,21 +292,24 @@
     // e as vendas por campanha/criativo/público são redistribuídas proporcional ao
     // que o Meta reportou, com método do maior resto — inteiros que somam exato.
 
-    // Vendas ADS por dia = diferença do acumulado. Ignora linhas futuras vazias
-    // (senão o acumulado "zeraria" e geraria incremento negativo).
-    function adsDaily(){
-      const s=(DATA.metricas&&DATA.metricas.series)||[];
+    // As colunas da planilha são ACUMULADAS. Aqui viram valor por dia (diferença
+    // do acumulado), o que é o que permite o filtro de data funcionar em cima
+    // delas. Ignora linhas futuras vazias — senão o acumulado "cairia" pra zero e
+    // geraria incremento negativo.
+    function cumDaily(key){
+      const s=((DATA.metricas&&DATA.metricas.series)||[]).filter(r=>r.hasData);
       const out={}; let prev=0;
-      for(const r of s){ if(!r.hasData) continue;
-        const inc=r.ads-prev; prev=r.ads; if(inc>0) out[dkey(r.date)]=inc; }
+      for(const r of s){ const inc=r[key]-prev; prev=r[key]; if(inc>0) out[dkey(r.date)]=inc; }
       return out;
     }
-    // Total de vendas ADS (planilha) dentro do período filtrado.
-    function adsTarget(){
-      const d=adsDaily(); let t=0;
+    // Soma os valores diários que caem dentro do filtro de data.
+    function cumInRange(key){
+      const d=cumDaily(key); let t=0;
       for(const k in d){ const p=k.split('-'); if(inRange(new Date(+p[0],+p[1]-1,+p[2]))) t+=d[k]; }
       return t;
     }
+    const adsDaily  = () => cumDaily('ads');     // vendas ads por dia
+    const adsTarget = () => cumInRange('ads');   // vendas ads no período filtrado
     // Fator planilha ÷ Meta, sobre TODAS as linhas do período (os dois perfis).
     // null = sem base pra ajustar (Meta zerado) → mantém o número do Meta.
     function vendasScale(){
@@ -339,14 +357,21 @@
       return out;
     }
 
-    // ── Filtro por preset ──────────────────────────────────────────────────────
+    // ── Filtro de data ─────────────────────────────────────────────────────────
+    // Vale pra dash toda porque TUDO (Meta, UTMs e as colunas da planilha) passa
+    // por inRange. Preset e De/Até são exclusivos: usar um limpa o outro.
+    let fStart=null, fEnd=null;          // null = sem limite daquele lado
     function cutoff(){
       if(presetDays==='all') return START;
       const t=new Date(); t.setHours(0,0,0,0);
       const c=new Date(t); c.setDate(c.getDate()-Number(presetDays));
       return c<START?START:c;
     }
-    const inRange = d => d>=cutoff();
+    const inRange = d => {
+      if(fStart && d<fStart) return false;
+      if(fEnd   && d>fEnd)   return false;
+      return d>=cutoff();
+    };
 
     // ── Aggregation ─────────────────────────────────────────────────────────────
     function metaAgg(rows){
@@ -414,18 +439,20 @@
       const cpl=div(k.investido,leads);
 
       const mc = DATA.metricas && DATA.metricas.latest;
-      const ingressos = mc ? mc.total : k.vendas;
       const metaIng  = mc ? mc.meta : 1800;              // meta total de ingressos
       const metaTraf = m.leads || 1170;                  // "Trafego meta leads" (aba Metas)
       const metaOrg  = Math.max(0, metaIng - metaTraf);  // 1.800 − 1.170 = 630
-      const orgSales = mc ? mc.vendas_org : 0;
-      const vAds = k.vendas;   // metaAgg já entrega as vendas da planilha
-      // Média/dia: cada métrica divide pelos dias que ELA rodou. O tráfego começou
-      // em 13/07 e o orgânico em 10/07 — dividir os dois pelos mesmos dias
-      // subestimaria o ads (diluiria as vendas por dias em que ele nem existia).
-      const _ser  = ((DATA.metricas&&DATA.metricas.series)||[]).filter(s=>s.hasData);
-      const ddTot = mc ? mc.dias : daysElapsed;                          // dias com dado
-      const ddAds = Math.max(1, _ser.filter(s=>s.ads>0).length);         // dias com tráfego
+      // Orgânico e total somam os valores DIÁRIOS dentro do filtro (antes liam o
+      // acumulado da última linha e ignoravam o período escolhido).
+      const orgSales = mc ? cumInRange('org') : 0;
+      const vAds = k.vendas;                             // metaAgg já traz o da planilha
+      const ingressos = mc ? orgSales + adsTarget() : k.vendas;
+      // Média/dia: cada métrica divide pelos dias que ELA rodou, dentro do filtro.
+      // O tráfego começou em 13/07 e o orgânico em 10/07 — dividir os dois pelos
+      // mesmos dias subestimaria o ads (diluiria por dias em que ele nem existia).
+      const _ser  = ((DATA.metricas&&DATA.metricas.series)||[]).filter(s=>s.hasData && inRange(s.date));
+      const ddTot = Math.max(1, _ser.length);                     // dias com dado
+      const ddAds = Math.max(1, _ser.filter(s=>s.ads>0).length);  // dias com tráfego
       let h='';
       h+=`<div class="gauges">`;
       h+=gauge('g1','Vendas Tráfego', vAds, metaTraf, NUM, NUM(Math.round(vAds/ddAds)), NUM(Math.round(metaTraf/daysTotal)));
@@ -437,8 +464,8 @@
       h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
         +card('Vendas Ads', NUM(vAds), 'accent', mc?'Fonte: planilha':'')
-        +(mc?card('START ADS', NUM(mc.start_ads)):'')
-        +(mc?card('VIP ADS', NUM(mc.vip_ads)):'')
+        +(mc?card('START ADS', NUM(cumInRange('startAds'))):'')
+        +(mc?card('VIP ADS', NUM(cumInRange('vipAds'))):'')
         +card('CPA', BRL(k.cpa))
         +card('CTR', PCT(k.ctr));
       h+=`</div>`;
@@ -446,12 +473,14 @@
       // ── 2) Vendas Orgânicas ──
       if(mc){
         h+=`<div class="lbl">Vendas Orgânicas</div><div class="grid">`;
-        h+=card('Ingressos Vendidos', NUM(mc.total), 'hl v', 'Meta: '+NUM(mc.meta), PCT(mc.pct_meta)+' da meta')
-          +card('Vendas Workshop ORG', NUM(mc.vendas_org), 'accent')
-          +card('START ORG', NUM(mc.start_org))
-          +card('VIP ORG', NUM(mc.vip_org))
-          +card('Grupo WhatsApp START', NUM(mc.whatsapp_start))
-          +card('Grupo WhatsApp VIP', NUM(mc.whatsapp_vip));
+        // % da meta calculado sobre os ingressos mostrados. O "% META" da planilha
+        // considera só o orgânico, então dava 5,89% ao lado de um total de 156.
+        h+=card('Ingressos Vendidos', NUM(ingressos), 'hl v', 'Meta: '+NUM(metaIng), PCT(div(ingressos,metaIng)*100)+' da meta')
+          +card('Vendas Workshop ORG', NUM(orgSales), 'accent')
+          +card('START ORG', NUM(cumInRange('startOrg')))
+          +card('VIP ORG', NUM(cumInRange('vipOrg')))
+          +card('Grupo WhatsApp START', NUM(cumInRange('waStart')))
+          +card('Grupo WhatsApp VIP', NUM(cumInRange('waVip')));
         h+=`</div>`;
       }
 
@@ -541,7 +570,39 @@
       profile=view; render();
     }
     function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); view=el.dataset.p; route(); }
-    function setPreset(el){ document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active')); el.classList.add('active'); presetDays=el.dataset.d; route(); }
+    function setPreset(el){
+      document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active'); presetDays=el.dataset.d;
+      fStart=fEnd=null;                       // preset limpa o De/Até
+      document.getElementById('dDe').value=''; document.getElementById('dAte').value='';
+      document.getElementById('dClear').style.display='none';
+      route();
+    }
+    const _pDate = v => { if(!v) return null; const p=v.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); };
+    function setDates(){
+      fStart=_pDate(document.getElementById('dDe').value);
+      fEnd  =_pDate(document.getElementById('dAte').value);
+      if(fStart && fEnd && fStart>fEnd){      // inverteu? troca em vez de zerar tudo
+        const t=fStart; fStart=fEnd; fEnd=t;
+        document.getElementById('dDe').value=dkey(fStart);
+        document.getElementById('dAte').value=dkey(fEnd);
+      }
+      if(fStart||fEnd){                       // De/Até limpa o preset
+        presetDays='all';
+        document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active'));
+        document.getElementById('dClear').style.display='';
+      } else { document.querySelector('.preset[data-d="all"]').classList.add('active');
+        document.getElementById('dClear').style.display='none'; }
+      route();
+    }
+    function clearDates(){
+      fStart=fEnd=null; presetDays='all';
+      document.getElementById('dDe').value=''; document.getElementById('dAte').value='';
+      document.getElementById('dClear').style.display='none';
+      document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active'));
+      document.querySelector('.preset[data-d="all"]').classList.add('active');
+      route();
+    }
 
     // ── Ordenação de tabelas (clicar no cabeçalho) ──────────────────────────────
     let _sortState={};
