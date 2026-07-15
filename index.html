@@ -430,7 +430,7 @@
       h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
       // CPA recalculado sobre as vendas reais (vAds), senão ficaria inflado.
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
-        +card('Vendas Ads', NUM(vAds), 'accent', _vt==null?'':'Fonte: planilha', _vt==null?'':'Meta reporta '+NUM(k.vendas))
+        +card('Vendas Ads', NUM(vAds), 'accent', _vt==null?'':'Fonte: planilha')
         +(mc?card('START ADS', NUM(mc.start_ads)):'')
         +(mc?card('VIP ADS', NUM(mc.vip_ads)):'')
         +card('CPA', BRL(div(k.investido, vAds)))
@@ -450,7 +450,7 @@
       }
 
       // ── 3) Gráfico por dia (largura total) ──
-      h+=`<div class="lbl">Vendas por Dia — Orgânico × Ads + Investimento</div>
+      h+=`<div class="lbl">Vendas por Dia — Orgânico × Ads + Investimento e CPA</div>
         <div class="chart-card"><div class="chart-box tall"><canvas id="cDia"></canvas></div></div>`;
 
       // ── 4) Origem dos cadastros (UTMs) — 3 colunas ──
@@ -487,11 +487,19 @@
           { type:'bar', label:'Vendas Orgânicas', data:_dates.map(k=>orgByDay[k]||0), backgroundColor:'#4ade80cc', borderColor:'#4ade80', borderWidth:0, borderRadius:4, stack:'v', yAxisID:'y' },
           { type:'bar', label:'Vendas Ads', data:_dates.map(k=>pagoByDay[k]||0), backgroundColor:'#b565d6cc', borderRadius:4, stack:'v', yAxisID:'y' },
           { type:'line', label:'Investido/dia', data:_dates.map(k=>invByDay[k]||0), borderColor:'#e6ccf5', backgroundColor:'rgba(230,204,245,.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#e6ccf5', tension:.35, yAxisID:'y1' },
+          // CPA/dia = investido ÷ vendas ads do dia. Eixo próprio: o CPA (~R$80) é
+          // uma ordem de grandeza menor que o investido (~R$1.800) e sumiria no y1.
+          // null nos dias sem venda (não desenha ponto em vez de fingir CPA 0).
+          { type:'line', label:'CPA/dia', data:_dates.map(k=>{ const v=pagoByDay[k]||0; return v>0?+((invByDay[k]||0)/v).toFixed(2):null; }),
+            borderColor:'#fbbf24', backgroundColor:'transparent', borderWidth:2, borderDash:[5,4], pointRadius:3, pointBackgroundColor:'#fbbf24', tension:.35, spanGaps:true, yAxisID:'y2' },
         ]},
         options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-          plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}}, tooltip:{callbacks:{label:c=>c.dataset.label.indexOf('Investido')>=0?` Investido: `+BRL(c.parsed.y):` ${c.dataset.label}: ${c.parsed.y}`}} },
+          plugins:{ legend:{labels:{color:'#cbb8dd',boxWidth:14,font:{size:12}}},
+            tooltip:{callbacks:{label:c=>{ const l=c.dataset.label;
+              return (l.indexOf('Investido')>=0||l.indexOf('CPA')>=0) ? ` ${l}: `+BRL(c.parsed.y) : ` ${l}: ${c.parsed.y}`; }}} },
           scales:{ x:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0',font:{size:11}}}, y:{stacked:true,grid:{color:'#ffffff08'},ticks:{color:'#9a8bb0'},beginAtZero:true},
-            y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#e6ccf5',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
+            y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#e6ccf5',callback:v=>'R$'+Math.round(v)},beginAtZero:true},
+            y2:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#fbbf24',callback:v=>'R$'+Math.round(v)},beginAtZero:true} } }
       }));
       pie('cOrig', topBy(urows,'source',8));
       hbar('cAds',  topBy(urows,'content',8));
