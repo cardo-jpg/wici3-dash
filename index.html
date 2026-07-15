@@ -255,13 +255,68 @@
       for(const r of rows){
         const c=r.c||[]; const d=cDate(c[0]); if(!d) continue;
         const org=cNum(c[3]), total=cNum(c[12]);
-        series.push({ date:d, org, paceDia:cNum(c[4]), total });
+        series.push({ date:d, org, paceDia:cNum(c[4]), total,
+          ads:cNum(c[10])+cNum(c[11]), hasData:(org>0||total>0) });
         if(org>0||total>0) latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
           vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
           start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
       }
       if(latest) latest.meta = latest.falta_meta + latest.total;
       return { latest, series };
+    }
+
+    // ── Vendas ADS: a planilha MÉTRICAS é a fonte de verdade ───────────────────
+    // O Meta sub-reporta compras (pixel/contas novas): hoje reporta ~24 contra 50
+    // na planilha. Então o TOTAL vem da planilha (START ADS + VIP ADS, acumulado)
+    // e as vendas por campanha/criativo/público são redistribuídas proporcional ao
+    // que o Meta reportou, com método do maior resto — inteiros que somam exato.
+
+    // Vendas ADS por dia = diferença do acumulado. Ignora linhas futuras vazias
+    // (senão o acumulado "zeraria" e geraria incremento negativo).
+    function adsDaily(){
+      const s=(DATA.metricas&&DATA.metricas.series)||[];
+      const out={}; let prev=0;
+      for(const r of s){ if(!r.hasData) continue;
+        const inc=r.ads-prev; prev=r.ads; if(inc>0) out[dkey(r.date)]=inc; }
+      return out;
+    }
+    // Total de vendas ADS (planilha) dentro do período filtrado.
+    function adsTarget(){
+      const d=adsDaily(); let t=0;
+      for(const k in d){ const p=k.split('-'); if(inRange(new Date(+p[0],+p[1]-1,+p[2]))) t+=d[k]; }
+      return t;
+    }
+    // Fator planilha ÷ Meta, sobre TODAS as linhas do período (os dois perfis).
+    // null = sem base pra ajustar (Meta zerado) → mantém o número do Meta.
+    function vendasScale(){
+      let c=0; for(const r of DATA.malu.concat(DATA.hire)) if(inRange(r.date)) c+=r.compras;
+      const t=adsTarget();
+      return (c>0 && t>0) ? t/c : null;
+    }
+    // Alvo do recorte atual. No Geral bate exato com a planilha; em Malu/Hire
+    // divide proporcional (Malu + Hire ≈ Geral).
+    function viewTarget(rows){
+      const sc=vendasScale(); if(sc==null) return null;
+      let c=0; for(const r of rows) c+=r.compras;
+      return Math.round(c*sc);
+    }
+    // Distribui `target` entre os grupos proporcional a `raw`, mantendo inteiros
+    // que somam exatamente `target` (maior resto).
+    function distribute(raw, target){
+      const out=raw.map(()=>0);
+      const tot=raw.reduce((a,b)=>a+b,0);
+      if(!(target>0) || tot<=0) return out;
+      const exact=raw.map(v=>v/tot*target);
+      let acc=0; exact.forEach((v,i)=>{ out[i]=Math.floor(v); acc+=out[i]; });
+      const ord=exact.map((v,i)=>({i,f:v-Math.floor(v)})).sort((a,b)=>b.f-a.f);
+      const rest=target-acc;
+      for(let k=0; k<rest && ord.length; k++) out[ord[k%ord.length].i]++;
+      return out;
+    }
+    // Vendas ajustadas por grupo — somam exatamente o total da planilha do recorte.
+    function vendasAdj(raw, rows){
+      const t=viewTarget(rows);
+      return t==null ? raw : distribute(raw, t);
     }
 
     // ── Filtro por preset ──────────────────────────────────────────────────────
@@ -287,12 +342,14 @@
     function anuncios(rows){
       const by={};
       for(const r of rows){ const key=r.anuncio||r.campanha||'(sem nome)'; let o=by[key];
-        if(!o) o=by[key]={nome:key,link:r.link,cost:0,impressions:0,clicks:0,ic:0,compras:0,faturamento:0};
-        o.cost+=r.cost;o.impressions+=r.impressions;o.clicks+=r.clicks;o.ic+=r.ic;o.compras+=r.compras;o.faturamento+=r.faturamento;
+        if(!o) o=by[key]={nome:key,link:r.link,cost:0,impressions:0,clicks:0,ic:0,raw:0,faturamento:0};
+        o.cost+=r.cost;o.impressions+=r.impressions;o.clicks+=r.clicks;o.ic+=r.ic;o.raw+=r.compras;o.faturamento+=r.faturamento;
         if(!o.link&&r.link)o.link=r.link;
       }
-      return Object.values(by).map(o=>({nome:o.nome,link:o.link,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
-        initiate_checkout:o.ic,vendas:o.compras,faturamento:o.faturamento,cpa:div(o.cost,o.compras),roas:div(o.faturamento,o.cost),ctr:div(o.clicks,o.impressions)*100}))
+      const list=Object.values(by);
+      const vend=vendasAdj(list.map(o=>o.raw), rows);   // soma = total da planilha
+      return list.map((o,i)=>({nome:o.nome,link:o.link,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
+        initiate_checkout:o.ic,vendas:vend[i],faturamento:o.faturamento,cpa:div(o.cost,vend[i]),roas:div(o.faturamento,o.cost),ctr:div(o.clicks,o.impressions)*100}))
         .sort((a,b)=>b.investido-a.investido);
     }
     // série diária: leads (UTM) + investido (Meta)
@@ -355,11 +412,15 @@
 
       // ── 1) Tráfego · Ads (Meta Ads) ──
       h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
+      // Vendas Ads vêm da planilha MÉTRICAS (o Meta sub-reporta). CPA recalculado
+      // em cima do número real, senão ficaria inflado.
+      const _vt = viewTarget(mrows);
+      const vAds = _vt==null ? k.vendas : _vt;
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
-        +card('Vendas Ads', NUM(k.vendas), 'accent')
+        +card('Vendas Ads', NUM(vAds), 'accent', _vt==null?'':'Fonte: planilha', _vt==null?'':'Meta reporta '+NUM(k.vendas))
         +(mc?card('START ADS', NUM(mc.start_ads)):'')
         +(mc?card('VIP ADS', NUM(mc.vip_ads)):'')
-        +card('CPA', BRL(k.cpa))
+        +card('CPA', BRL(div(k.investido, vAds)))
         +card('CTR', PCT(k.ctr));
       h+=`</div>`;
 
@@ -391,8 +452,19 @@
       const footEl=document.getElementById('foot'); if(footEl) footEl.textContent='Atualiza a cada abertura · dados de 13/07 em diante · investimento convertido a R$ '+(m.cotacao||5.16).toLocaleString('pt-BR',{minimumFractionDigits:2})+'/US$';
 
       // Charts — vendas Orgânico (verde) + Ads (roxo) empilhadas + investido/dia (linha). Só dias com dado.
-      const invByDay={}, pagoByDay={};
-      for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; pagoByDay[kd]=(pagoByDay[kd]||0)+r.compras; }
+      const invByDay={};
+      for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
+      // Vendas Ads/dia: vêm da planilha. No Geral usa o número real do dia; em
+      // Malu/Hire divide o dia proporcional às compras que o Meta deu pro perfil.
+      const _adsD=adsDaily(), pagoByDay={};
+      if(profile==='geral'){ for(const kd in _adsD){ const p=kd.split('-'); if(inRange(new Date(+p[0],+p[1]-1,+p[2]))) pagoByDay[kd]=_adsD[kd]; } }
+      else {
+        const allD={}, subD={};
+        for(const r of DATA.malu.concat(DATA.hire)) if(inRange(r.date)){ const kd=dkey(r.date); allD[kd]=(allD[kd]||0)+r.compras; }
+        for(const r of mrows){ const kd=dkey(r.date); subD[kd]=(subD[kd]||0)+r.compras; }
+        for(const kd in _adsD){ const p=kd.split('-'); if(!inRange(new Date(+p[0],+p[1]-1,+p[2]))) continue;
+          const a=allD[kd]||0; pagoByDay[kd] = a>0 ? Math.round(_adsD[kd]*(subD[kd]||0)/a) : 0; }
+      }
       const orgByDay={}; ((DATA.metricas&&DATA.metricas.series)||[]).forEach(s=>{ const v=Math.max(0, s.paceDia||0); if(v>0) orgByDay[dkey(s.date)]=v; });
       const _dset=new Set([...Object.keys(invByDay).filter(k=>invByDay[k]>0||pagoByDay[k]>0), ...Object.keys(orgByDay)]);
       const _dates=[..._dset].sort();
@@ -470,13 +542,15 @@
     function campaigns(rows){
       const by={}, metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       for(const r of rows){ const key=r.campanha||'—'; let o=by[key];
-        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,vendas:0};
-        o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.vendas+=r.compras;
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,raw:0};
+        o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.raw+=r.compras;
       }
-      return Object.values(by).map(o=>{ const cpa=div(o.cost,o.vendas);
-        let al='ok'; if(o.vendas===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
+      const list=Object.values(by);
+      const vend=vendasAdj(list.map(o=>o.raw), rows);   // soma = total da planilha
+      return list.map((o,i)=>{ const v=vend[i], cpa=div(o.cost,v);
+        let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
         return { nome:o.nome, tipo:campType(o.nome), investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
-          cliques:o.clk, pv:o.pv, cr:div(o.pv,o.clk)*100, checkout:o.ic, vendas:o.vendas, txconv:div(o.vendas,o.ic)*100, cpa, al };
+          cliques:o.clk, pv:o.pv, cr:div(o.pv,o.clk)*100, checkout:o.ic, vendas:v, txconv:div(v,o.ic)*100, cpa, al };
       }).sort((a,b)=>b.investido-a.investido);
     }
     let _campFilter='';
@@ -515,12 +589,14 @@
       const metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       const by={};
       for(const r of rows){ const key=r.adset||'—'; let o=by[key];
-        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,ic:0,vendas:0};
-        o.cost+=r.cost;o.imp+=r.impressions;o.clk+=r.clicks;o.ic+=r.ic;o.vendas+=r.compras;
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,ic:0,raw:0};
+        o.cost+=r.cost;o.imp+=r.impressions;o.clk+=r.clicks;o.ic+=r.ic;o.raw+=r.compras;
       }
-      const pubs=sortRows('publicos', Object.values(by).map(o=>{ const cpa=div(o.cost,o.vendas);
-        let al='ok'; if(o.vendas===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
-        return {nome:o.nome,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:o.vendas,cpa,al};
+      const plist=Object.values(by);
+      const pvend=vendasAdj(plist.map(o=>o.raw), rows);   // soma = total da planilha
+      const pubs=sortRows('publicos', plist.map((o,i)=>{ const v=pvend[i], cpa=div(o.cost,v);
+        let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
+        return {nome:o.nome,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:v,cpa,al};
       }), 'investido');
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Públicos — Performance por Ad Set (${pubs.length})</div>
