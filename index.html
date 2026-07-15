@@ -251,17 +251,23 @@
 
     // aba MÉTRICAS: DATA,WA_START,WA_VIP,VENDAS_ORG,PACE_DIA,PACE_MED,FALTA,%META,START_ORG,VIP_ORG,START_ADS,VIP_ADS,TOTAL
     function metricasParse(table){
-      const rows=table.rows||[]; let latest=null; const series=[];
+      const rows=table.rows||[]; let latest=null; const series=[]; let dias=0;
       for(const r of rows){
         const c=r.c||[]; const d=cDate(c[0]); if(!d) continue;
-        const org=cNum(c[3]), total=cNum(c[12]);
+        const org=cNum(c[3]), total=cNum(c[12]), has=(org>0||total>0);
         series.push({ date:d, org, paceDia:cNum(c[4]), total,
-          ads:cNum(c[10])+cNum(c[11]), hasData:(org>0||total>0) });
-        if(org>0||total>0) latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
-          vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
-          start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
+          ads:cNum(c[10])+cNum(c[11]), hasData:has });
+        if(has){ dias++;
+          latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
+            vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
+            start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
+        }
       }
-      if(latest) latest.meta = latest.falta_meta + latest.total;
+      // "FALTA PARA META" na planilha é calculado só sobre as vendas ORGÂNICAS (a
+      // coluna nasceu antes do tráfego existir) → meta real = falta + org = 1.800.
+      // Somar com o TOTAL daria 1.850, inflando a meta conforme o ads vende.
+      if(latest){ latest.meta = latest.falta_meta + latest.vendas_org; latest.dias = dias || 1;
+        latest.vendas_ads = latest.start_ads + latest.vip_ads; }
       return { latest, series };
     }
 
@@ -400,22 +406,26 @@
 
       const mc = DATA.metricas && DATA.metricas.latest;
       const ingressos = mc ? mc.total : k.vendas;
-      const metaIng = mc ? mc.meta : 1800;
-      let h='';
-      // Gauges (vendas, sem leads)
+      const metaIng  = mc ? mc.meta : 1800;              // meta total de ingressos
+      const metaTraf = m.leads || 1170;                  // "Trafego meta leads" (aba Metas)
+      const metaOrg  = Math.max(0, metaIng - metaTraf);  // 1.800 − 1.170 = 630
       const orgSales = mc ? mc.vendas_org : 0;
+      // Vendas Ads vêm da planilha MÉTRICAS (o Meta sub-reporta).
+      const _vt  = viewTarget(mrows);
+      const vAds = _vt==null ? k.vendas : _vt;
+      // Média/dia sobre os dias que a planilha tem dado (não sobre START da campanha,
+      // senão o orgânico — que começou antes — fica com média errada).
+      const dd = mc ? mc.dias : daysElapsed;
+      let h='';
       h+=`<div class="gauges">`;
-      h+=gauge('g1','Ingressos Vendidos', ingressos, metaIng, NUM, mc?NUM(Math.round(mc.pace_medio)):NUM(Math.round(ingressos/daysElapsed)), NUM(Math.round(metaIng/daysTotal)));
-      h+=gauge('g2','Vendas Orgânico', orgSales, metaIng, NUM, mc?NUM(Math.round(mc.pace_medio)):'—', NUM(Math.round(metaIng/daysTotal)));
-      h+=gauge('g3','Investimento', k.investido, m.investimento, BRLk, BRLk(k.investido/daysElapsed), BRLk(m.investimento/daysTotal));
+      h+=gauge('g1','Vendas Tráfego', vAds, metaTraf, NUM, NUM(Math.round(vAds/dd)), NUM(Math.round(metaTraf/daysTotal)));
+      h+=gauge('g2','Vendas Orgânico', orgSales, metaOrg, NUM, NUM(Math.round(orgSales/dd)), NUM(Math.round(metaOrg/daysTotal)));
+      h+=gauge('g3','Total Geral', ingressos, metaIng, NUM, NUM(Math.round(ingressos/dd)), NUM(Math.round(metaIng/daysTotal)));
       h+=`</div>`;
 
       // ── 1) Tráfego · Ads (Meta Ads) ──
       h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
-      // Vendas Ads vêm da planilha MÉTRICAS (o Meta sub-reporta). CPA recalculado
-      // em cima do número real, senão ficaria inflado.
-      const _vt = viewTarget(mrows);
-      const vAds = _vt==null ? k.vendas : _vt;
+      // CPA recalculado sobre as vendas reais (vAds), senão ficaria inflado.
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
         +card('Vendas Ads', NUM(vAds), 'accent', _vt==null?'':'Fonte: planilha', _vt==null?'':'Meta reporta '+NUM(k.vendas))
         +(mc?card('START ADS', NUM(mc.start_ads)):'')
