@@ -176,7 +176,11 @@
     const UTM_MALU   = '1J9USJNVbFsIuih8j_vD5zsG_iP7P_jvp8BGcxldVw9M';
     const UTM_HIRE   = '1RKBwlAGJWFZ72Us4GHU_sron19JY8XuFWRvBOtH0YDA';
     const SHEET_METR = '1V4WEVo5A0TYZ5_1Ez4rb_RHXwd6ExneizW38hzS8YZE';   // aba MÉTRICAS (compradores/vendas)
-    const START = new Date(2026, 6, 13);          // 13/07/2026 (piso dos dados)
+    const START = new Date(2026, 6, 13);          // 13/07/2026 — início do TRÁFEGO (usado no pacing)
+    // Piso do filtro. NÃO usar START aqui: a planilha MÉTRICAS começa em 10/07 (o
+    // orgânico é mais antigo que o tráfego), e cortar em 13/07 derrubaria o
+    // orgânico de 106 pra 44 no modo "Tudo".
+    const FLOOR = new Date(2026, 0, 1);
     const EVENT = new Date(2026, 7, 15);          // 15/08/2026 (evento) — p/ meta/dia
     const METAS_DEFAULT = { leads:1170, investimento:87750, cpa:71, cpm:25, ctr:0.80, connect_rate:82,
       cotacao:5.16, data_inicio:'13/07/2026', data_evento:'15/08 e 16/08' };
@@ -310,19 +314,20 @@
     }
     const adsDaily  = () => cumDaily('ads');     // vendas ads por dia
     const adsTarget = () => cumInRange('ads');   // vendas ads no período filtrado
-    // Fator planilha ÷ Meta, sobre TODAS as linhas do período (os dois perfis).
-    // null = sem base pra ajustar (Meta zerado) → mantém o número do Meta.
-    function vendasScale(){
-      let c=0; for(const r of DATA.malu.concat(DATA.hire)) if(inRange(r.date)) c+=r.compras;
-      const t=adsTarget();
-      return (c>0 && t>0) ? t/c : null;
-    }
-    // Alvo do recorte atual. No Geral bate exato com a planilha; em Malu/Hire
-    // divide proporcional (Malu + Hire ≈ Geral).
+    // Vendas do recorte atual segundo a planilha — ela é quem manda. O Meta só
+    // serve pra RATEAR esse total entre perfis/campanhas/criativos.
+    // null = não há planilha carregada → usa o número do Meta como está.
     function viewTarget(rows){
-      const sc=vendasScale(); if(sc==null) return null;
-      let c=0; for(const r of rows) c+=r.compras;
-      return Math.round(c*sc);
+      if(!(DATA.metricas && DATA.metricas.latest)) return null;
+      const t=adsTarget();
+      if(t<=0) return 0;      // planilha diz que não houve venda no período: é 0, não o do Meta
+      let allC=0, allI=0, c=0, i=0;
+      for(const r of DATA.malu.concat(DATA.hire)) if(inRange(r.date)){ allC+=r.compras; allI+=r.cost; }
+      for(const r of rows){ c+=r.compras; i+=r.cost; }
+      // Rateio pelas compras do Meta; se o Meta não reportou nenhuma compra no
+      // período, rateia pelo investido — senão as vendas reais sumiriam da tela.
+      const share = allC>0 ? c/allC : (allI>0 ? i/allI : 0);
+      return Math.round(t*share);
     }
     // Distribui `target` entre os grupos proporcional a `raw`, mantendo inteiros
     // que somam exatamente `target` (maior resto).
@@ -338,9 +343,13 @@
       return out;
     }
     // Vendas ajustadas por grupo — somam exatamente o total da planilha do recorte.
-    function vendasAdj(raw, rows){
+    // Peso: compras do Meta. Se o Meta zerou tudo no período, cai pro investido —
+    // senão a tabela mostraria 0 em toda linha com o total dizendo N.
+    function vendasAdj(raw, rows, peso){
       const t=viewTarget(rows);
-      return t==null ? raw : distribute(raw, t);
+      if(t==null) return raw;
+      const base = raw.some(v=>v>0) ? raw : ((peso && peso.some(v=>v>0)) ? peso : raw);
+      return distribute(base, t);
     }
     // Vendas Ads por dia de um subconjunto de linhas: pega o número real do dia
     // (planilha) e rateia proporcional às compras que o Meta deu pra esse
@@ -362,10 +371,10 @@
     // por inRange. Preset e De/Até são exclusivos: usar um limpa o outro.
     let fStart=null, fEnd=null;          // null = sem limite daquele lado
     function cutoff(){
-      if(presetDays==='all') return START;
+      if(presetDays==='all') return FLOOR;
       const t=new Date(); t.setHours(0,0,0,0);
       const c=new Date(t); c.setDate(c.getDate()-Number(presetDays));
-      return c<START?START:c;
+      return c<FLOOR?FLOOR:c;
     }
     const inRange = d => {
       if(fStart && d<fStart) return false;
@@ -395,7 +404,7 @@
         if(!o.link&&r.link)o.link=r.link;
       }
       const list=Object.values(by);
-      const vend=vendasAdj(list.map(o=>o.raw), rows);   // soma = total da planilha
+      const vend=vendasAdj(list.map(o=>o.raw), rows, list.map(o=>o.cost));   // soma = total da planilha
       return list.map((o,i)=>({nome:o.nome,link:o.link,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
         initiate_checkout:o.ic,vendas:vend[i],faturamento:o.faturamento,cpa:div(o.cost,vend[i]),roas:div(o.faturamento,o.cost),ctr:div(o.clicks,o.impressions)*100}))
         .sort((a,b)=>b.investido-a.investido);
@@ -466,7 +475,7 @@
         +card('Vendas Ads', NUM(vAds), 'accent', mc?'Fonte: planilha':'')
         +(mc?card('START ADS', NUM(cumInRange('startAds'))):'')
         +(mc?card('VIP ADS', NUM(cumInRange('vipAds'))):'')
-        +card('CPA', BRL(k.cpa))
+        +card('CPA', vAds>0?BRL(k.cpa):'—')   // sem venda: '—', senão R$0,00 lê como CPA ótimo
         +card('CTR', PCT(k.ctr));
       h+=`</div>`;
 
@@ -625,7 +634,7 @@
         o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.raw+=r.compras;
       }
       const list=Object.values(by);
-      const vend=vendasAdj(list.map(o=>o.raw), rows);   // soma = total da planilha
+      const vend=vendasAdj(list.map(o=>o.raw), rows, list.map(o=>o.cost));   // soma = total da planilha
       return list.map((o,i)=>{ const v=vend[i], cpa=div(o.cost,v);
         let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
         return { nome:o.nome, tipo:campType(o.nome), investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
@@ -672,7 +681,7 @@
         o.cost+=r.cost;o.imp+=r.impressions;o.clk+=r.clicks;o.ic+=r.ic;o.raw+=r.compras;
       }
       const plist=Object.values(by);
-      const pvend=vendasAdj(plist.map(o=>o.raw), rows);   // soma = total da planilha
+      const pvend=vendasAdj(plist.map(o=>o.raw), rows, plist.map(o=>o.cost));   // soma = total da planilha
       const pubs=sortRows('publicos', plist.map((o,i)=>{ const v=pvend[i], cpa=div(o.cost,v);
         let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
         return {nome:o.nome,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:v,cpa,al};
@@ -746,7 +755,7 @@
       const g=lpAgg(lps[0].rows.concat(lps[1].rows));
       let h=`<div class="lp-geral"><div class="lp-geral-lbl">GERAL (A + B)</div><div class="lp-geral-stats">
         <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(g.investido)}</div></div>
-        <div><div class="lp-meta-lbl">CPA Médio</div><div class="lp-meta-val">${BRL(g.cpa)}</div></div>
+        <div><div class="lp-meta-lbl">CPA Médio</div><div class="lp-meta-val">${g.vendas>0?BRL(g.cpa):'—'}</div></div>
         <div><div class="lp-meta-lbl">Tx Conv PV→V</div><div class="lp-meta-val accent">${PCT(div(g.vendas,g.pv)*100)}</div></div>
         <div><div class="lp-meta-lbl">Total Vendas</div><div class="lp-meta-val">${NUM(g.vendas)}</div></div>
       </div></div><div class="lp-grid">`;
@@ -768,7 +777,7 @@
         h+=`<div class="lp-panel"><div class="lp-header"><div class="lp-header-left"><div class="lp-header-name">${lp.nome}</div><a class="lp-header-url" href="${lp.url}" target="_blank">${lp.url.replace('https://','')}</a></div>
           <div class="lp-header-right">
             <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(a.investido)}</div></div>
-            <div><div class="lp-meta-lbl">CPA</div><div class="lp-meta-val">${BRL(a.cpa)}</div></div>
+            <div><div class="lp-meta-lbl">CPA</div><div class="lp-meta-val">${a.vendas>0?BRL(a.cpa):'—'}</div></div>
             <div><div class="lp-meta-lbl">Tx Conv PV→V</div><div class="lp-meta-val accent">${PCT(div(a.vendas,a.pv)*100)}</div></div>
           </div></div>
           <div class="lp-body"><div class="lp-funnel-col">${fn}</div><div class="lp-charts-col">
