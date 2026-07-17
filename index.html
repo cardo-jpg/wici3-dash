@@ -627,6 +627,26 @@
 
     // ── Campanhas / Públicos / Criativos ────────────────────────────────────────
     function campType(name){ if(/_Q(\b|_)|\[Q\]|QUENTE|RMKT|REMARK/i.test(name)) return 'quente'; if(/_F(\b|_)|\[F\]|\bFRIO\b/i.test(name)) return 'frio'; return '—'; }
+
+    // ── Página da LP (A/B/C/D) a partir do nome da campanha ────────────────────
+    // Regra: a letra da página é a que sobra DEPOIS do marcador de temperatura,
+    // no FIM do nome. Sem letra sobrando → página C (foi a primeira, criada antes
+    // da convenção existir). Ex.: _Vendas_F → C · _Vendas_F_D → D · _Vendas_Q → C
+    // CUIDADO: _F e _Q são frio/quente, NÃO páginas — daí o descarte explícito.
+    function campPage(nome){
+      const m=String(nome||'').trim().match(/[_\-\s]([A-Za-z])\s*$/);
+      if(!m) return 'C';
+      const L=m[1].toUpperCase();
+      if(L==='F'||L==='Q') return 'C';
+      return L;
+    }
+    // URL de cada página. Atenção à inversão: na URL a página A NÃO tem sufixo
+    // (malu-ads), enquanto no nome da campanha "sem letra" significa página C.
+    const LP_BASE='https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-';
+    function lpUrl(perfil,pg){
+      const p=perfil.toLowerCase();
+      return LP_BASE+p+'-ads'+(pg==='A'?'':'-'+pg.toLowerCase());
+    }
     function campaigns(rows){
       const by={}, metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       for(const r of rows){ const key=r.campanha||'—'; let o=by[key];
@@ -748,10 +768,21 @@
     }
     function renderLP(){
       killCharts();
-      const lps=[
-        {nome:'LP Malu', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-malu-ads-c', rows:DATA.malu.filter(r=>inRange(r.date))},
-        {nome:'LP Hire', url:'https://hirebrazil.com.br/workshop-intensivo-de-carreira-internacional-hire-ads-c', rows:DATA.hire.filter(r=>inRange(r.date))},
-      ];
+      // Uma LP por PÁGINA (não por perfil): a página vem do sufixo da campanha.
+      // Só entra página que teve investimento no período — senão a tela enche de
+      // funil vazio de página que ainda não subiu campanha.
+      const _byPage={};
+      for(const [perfil,src] of [['Malu',DATA.malu],['Hire',DATA.hire]]){
+        for(const r of src){ if(!inRange(r.date)) continue;
+          const pg=campPage(r.campanha), k=perfil+'|'+pg;
+          (_byPage[k]=_byPage[k]||{nome:'LP '+perfil+' '+pg, url:lpUrl(perfil,pg), rows:[]}).rows.push(r);
+        }
+      }
+      const lps=Object.keys(_byPage).sort()
+        .map(k=>_byPage[k])
+        .filter(l=>l.rows.some(r=>r.cost>0));
+      if(!lps.length){ document.getElementById('body').innerHTML='<div class="empty">Sem dados no período</div>';
+        document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); return; }
       const g=lpAgg(lps[0].rows.concat(lps[1].rows));
       let h=`<div class="lp-geral"><div class="lp-geral-lbl">GERAL (A + B)</div><div class="lp-geral-stats">
         <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(g.investido)}</div></div>
