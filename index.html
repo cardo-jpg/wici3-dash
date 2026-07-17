@@ -46,10 +46,12 @@
     .tab.active{ background:var(--purple); color:#fff; }
 
     /* Gauges */
-    .gauges{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+    /* auto-fit: 4 gauges lado a lado no desktop, quebrando sozinho quando aperta. */
+    .gauges{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-bottom:16px; }
     /* Pace: verde = o ritmo atual dá conta; vermelho = precisa acelerar. */
     .gauge-stat-v.pc-ok{ color:#4ade80; }
     .gauge-stat-v.pc-bad{ color:#f87171; }
+    .gauge-sub{ font-size:.72rem; color:#c9a9e0; margin-top:-6px; margin-bottom:2px; letter-spacing:.02em; }
     .gauge-card{ background:linear-gradient(160deg, rgba(120,58,155,.4), rgba(38,20,58,.85)); border:1px solid rgba(192,123,224,.34); border-radius:20px; padding:26px 22px; display:flex; flex-direction:column; align-items:center; box-shadow:0 10px 44px rgba(139,61,171,.28); }
     .gauge-card:hover{ border-color:rgba(206,140,235,.55); }
     .gauge-title{ font-size:.98rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:#e0c4f0; margin-bottom:10px; }
@@ -415,9 +417,10 @@
 
     // ── Render ──────────────────────────────────────────────────────────────────
     const ARC=298.5;
-    function gauge(id, title, atual, meta, fmt, mediaDia, metaDia, pace){
+    function gauge(id, title, atual, meta, fmt, mediaDia, metaDia, pace, sub){
       const pct = meta? Math.min(100,Math.max(0,atual/meta*100)) : 0;
       return `<div class="gauge-card"><div class="gauge-title">${title}</div>
+        ${sub?`<div class="gauge-sub">${sub}</div>`:''}
         <div class="gauge-wrap"><svg class="gauge-svg" viewBox="0 0 200 140">
           <path class="gauge-track" d="M5,110 A95,95,0,0,1,195,110"/>
           <path class="gauge-fill" d="M5,110 A95,95,0,0,1,195,110" stroke="url(#pg)"
@@ -470,22 +473,29 @@
       // ritmo teórico calculado desde o dia 1 e não se corrige conforme atrasamos;
       // este é o número acionável — o ritmo necessário de amanhã em diante.
       const diasRest=Math.max(1, Math.round((EVENT-today)/864e5));
-      function paceOf(atual, meta, ritmoAtual){
+      function paceOf(atual, meta, ritmoAtual, f, okTxt){
         if(!meta) return null;
+        f = f || NUM;
         const falta=meta-atual;
-        if(falta<=0) return { txt:'✓ meta batida', cls:'pc-ok', tip:'Meta atingida' };
+        if(falta<=0) return { txt:okTxt||'✓ meta batida', cls:'pc-ok', tip:'Meta atingida' };
         const need=Math.ceil(falta/diasRest);
         // Verde quando o ritmo já alcançado dá conta; vermelho quando é preciso acelerar.
         const cls = ritmoAtual>=need ? 'pc-ok' : 'pc-bad';
-        return { txt:NUM(need), cls,
-          tip:NUM(falta)+' restantes ÷ '+diasRest+' dias até 15/08 · ritmo atual '+NUM(ritmoAtual)+'/dia' };
+        return { txt:f(need), cls,
+          tip:f(falta)+' restantes ÷ '+diasRest+' dias até 15/08 · ritmo atual '+f(ritmoAtual)+'/dia' };
       }
       const rAds=Math.round(vAds/ddAds), rOrg=Math.round(orgSales/ddTot), rTot=Math.round(ingressos/ddTot);
+      // Investimento: dias decorridos desde o início do TRÁFEGO (o gasto começou lá),
+      // não desde o início da planilha — senão a média/dia sai diluída.
+      const rInv=k.investido/Math.max(1,ddAds);
+      const _disp=Math.max(0, m.investimento-k.investido);
       let h='';
       h+=`<div class="gauges">`;
       h+=gauge('g1','Vendas Tráfego', vAds, metaTraf, NUM, NUM(rAds), NUM(Math.round(metaTraf/daysTotal)), paceOf(vAds,metaTraf,rAds));
       h+=gauge('g2','Vendas Orgânico', orgSales, metaOrg, NUM, NUM(rOrg), NUM(Math.round(metaOrg/daysTotal)), paceOf(orgSales,metaOrg,rOrg));
       h+=gauge('g3','Total Geral', ingressos, metaIng, NUM, NUM(rTot), NUM(Math.round(metaIng/daysTotal)), paceOf(ingressos,metaIng,rTot));
+      h+=gauge('g4','Investimento', k.investido, m.investimento, BRLk, BRLk(rInv), BRLk(m.investimento/daysTotal),
+             paceOf(k.investido, m.investimento, rInv, BRLk, '✓ verba usada'), 'Disponível: '+BRLk(_disp));
       h+=`</div>`;
 
       // ── 1) Tráfego · Ads (Meta Ads) ──
