@@ -33,6 +33,7 @@ DASH_URL   = 'https://cardo-jpg.github.io/wici3-dash/'
 OK, WARN, FAIL = '✅', '⚠️', '❌'
 TICK, CASH, CHART, CAL = '\U0001F39F', '\U0001F4B0', '\U0001F4CA', '\U0001F4C5'
 PURPLE, GREEN, PIN, LINK, DART = '\U0001F7E3', '\U0001F7E2', '\U0001F4CC', '\U0001F517', '\U0001F3AF'
+UP, MAG = '\U0001F4C8', '\U0001F50D'
 SEP = '`' + '─' * 34 + '`'
 
 
@@ -186,7 +187,7 @@ def main():
     # ── MSG 2 — Pace até o evento ──────────────────────────────────────────────
     msg2 = '\n'.join([
         SEP,
-        f"{DART} **PACE ATÉ O EVENTO (15/08) — faltam {dias} dias**",
+        f"{UP} **PACE ATÉ O EVENTO (15/08) — faltam {dias} dias**",
         SEP,
         f"{PURPLE} **Tráfego:** {cur['ads']}/{META_TRAF} · precisa **{need_traf}/dia** (dia: {d_ads}) {pace_icon(d_ads, need_traf)}",
         f"{GREEN} **Orgânico:** {cur['org']}/{META_ORG} · precisa **{need_org}/dia** (dia: {d_org}) {pace_icon(d_org, need_org)}",
@@ -198,8 +199,27 @@ def main():
         f"{LINK} [Dashboard ao vivo]({DASH_URL})",
     ])
 
+    # ── MSG 3 — Anotações do dia (template pra equipe preencher no canal) ───────
+    msg3 = '\n'.join([
+        SEP,
+        f"{PIN} **OBSERVAÇÃO DO DIA**",
+        SEP,
+        "> ",
+        "",
+        SEP,
+        f"{DART} **DECISÕES TOMADAS**",
+        SEP,
+        "> ",
+        "",
+        SEP,
+        f"{MAG} **AÇÕES PARA AMANHÃ**",
+        SEP,
+        "> ",
+    ])
+
     send(msg1)
     send(msg2)
+    send(msg3)
 
 
 if __name__ == '__main__':
