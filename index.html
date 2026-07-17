@@ -783,8 +783,12 @@
         .filter(l=>l.rows.some(r=>r.cost>0));
       if(!lps.length){ document.getElementById('body').innerHTML='<div class="empty">Sem dados no período</div>';
         document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); return; }
-      const g=lpAgg(lps[0].rows.concat(lps[1].rows));
-      let h=`<div class="lp-geral"><div class="lp-geral-lbl">GERAL (A + B)</div><div class="lp-geral-stats">
+      // Soma TODAS as páginas. Era lps[0]+lps[1] fixo (de quando só existiam Malu
+      // e Hire) — com 3+ páginas isso silenciosamente deixava as demais de fora.
+      const _allRows=lps.reduce((a,l)=>a.concat(l.rows),[]);
+      const g=lpAgg(_allRows);
+      const _lbl='GERAL ('+lps.map(l=>l.nome.replace('LP ','')).join(' + ')+')';
+      let h=`<div class="lp-geral"><div class="lp-geral-lbl">${_lbl}</div><div class="lp-geral-stats">
         <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(g.investido)}</div></div>
         <div><div class="lp-meta-lbl">CPA Médio</div><div class="lp-meta-val">${g.vendas>0?BRL(g.cpa):'—'}</div></div>
         <div><div class="lp-meta-lbl">Tx Conv PV→V</div><div class="lp-meta-val accent">${PCT(div(g.vendas,g.pv)*100)}</div></div>
