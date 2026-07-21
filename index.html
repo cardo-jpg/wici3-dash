@@ -107,6 +107,11 @@
     .tp-q{ color:#f5b78a; background:rgba(245,120,60,.14); border:1px solid rgba(245,120,60,.4); }
     .tp-f{ color:#9cc7f0; background:rgba(90,150,240,.14); border:1px solid rgba(90,150,240,.4); }
     .tp-n{ color:var(--muted); }
+    .st{ display:inline-block; font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:7px; white-space:nowrap; }
+    .st-on{ color:#8ef0b0; background:rgba(34,197,94,.16); border:1px solid rgba(34,197,94,.45); }
+    .st-off{ color:#c9b8d6; background:rgba(120,90,150,.18); border:1px solid rgba(150,95,190,.35); }
+    .st-bad{ color:#f79a9a; background:rgba(239,68,68,.16); border:1px solid rgba(239,68,68,.45); }
+    .st-none{ color:var(--muted); }
     .lp-win{ color:#8ef0b0; font-weight:800; }
     .lp-grid{ display:flex; flex-direction:column; gap:24px; }
     .lp-geral{ background:linear-gradient(150deg,#8a37b4,#42186e); border:1px solid rgba(206,140,235,.5); border-radius:16px; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px; box-shadow:0 8px 30px rgba(139,61,171,.35); }
@@ -238,7 +243,7 @@
         const c=r.c||[]; const d=cDate(c[0]); if(!d||d<START) continue;
         out.push({ date:d, campanha:cStr(c[1]), adset:cStr(c[2]), cost:cNum(c[3]), impressions:cNum(c[4]), reach:cNum(c[5]),
           clicks:cNum(c[6]), pageview:cNum(c[7]), ic:cNum(c[8]), compras:cNum(c[9]),
-          link:cStr(c[10]), anuncio:cStr(c[11]), faturamento:cNum(c[12]) });
+          link:cStr(c[10]), anuncio:cStr(c[11]), faturamento:cNum(c[12]), status:cStr(c[13]) });
       }
       return out;
     }
@@ -404,13 +409,14 @@
     function anuncios(rows){
       const by={};
       for(const r of rows){ const key=r.anuncio||r.campanha||'(sem nome)'; let o=by[key];
-        if(!o) o=by[key]={nome:key,link:r.link,cost:0,impressions:0,clicks:0,ic:0,raw:0,faturamento:0};
+        if(!o) o=by[key]={nome:key,link:r.link,cost:0,impressions:0,clicks:0,ic:0,raw:0,faturamento:0,status:'',_sd:null,_rk:9};
         o.cost+=r.cost;o.impressions+=r.impressions;o.clicks+=r.clicks;o.ic+=r.ic;o.raw+=r.compras;o.faturamento+=r.faturamento;
         if(!o.link&&r.link)o.link=r.link;
+        accStatus(o,r);
       }
       const list=Object.values(by);
       const vend=vendasAdj(list.map(o=>o.raw), rows, list.map(o=>o.cost));   // soma = total da planilha
-      return list.map((o,i)=>({nome:o.nome,link:o.link,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
+      return list.map((o,i)=>({nome:o.nome,link:o.link,status:o.status,investido:o.cost,impressoes:o.impressions,cliques:o.clicks,
         initiate_checkout:o.ic,vendas:vend[i],faturamento:o.faturamento,cpa:div(o.cost,vend[i]),roas:div(o.faturamento,o.cost),ctr:div(o.clicks,o.impressions)*100}))
         .sort((a,b)=>b.investido-a.investido);
     }
@@ -657,6 +663,25 @@
     // ── Campanhas / Públicos / Criativos ────────────────────────────────────────
     function campType(name){ if(/_Q(\b|_)|\[Q\]|QUENTE|RMKT|REMARK/i.test(name)) return 'quente'; if(/_F(\b|_)|\[F\]|\bFRIO\b/i.test(name)) return 'frio'; return '—'; }
 
+    // Status efetivo do Meta → selo. ACTIVE=ativo; qualquer *PAUSED=pausado;
+    // DISAPPROVED=reprovado. rank ordena (ativo primeiro). Usado pra pegar o
+    // estado mais "ativo" na data mais recente de cada grupo.
+    function statusInfo(raw){
+      const s=String(raw||'').toUpperCase();
+      if(s==='ACTIVE')      return { txt:'Ativo',     cls:'st-on',   rank:0 };
+      if(s==='DISAPPROVED') return { txt:'Reprovado', cls:'st-bad',  rank:2 };
+      if(s.indexOf('PAUSED')>=0) return { txt:'Pausado', cls:'st-off', rank:1 };
+      return { txt:'—', cls:'st-none', rank:3 };
+    }
+    // Acumula, num objeto de grupo, o status mais recente/ativo (min rank na maior data).
+    function accStatus(o, r){
+      if(!r.status) return;
+      const rk=statusInfo(r.status).rank;
+      if(!o._sd || r.date>o._sd){ o._sd=r.date; o.status=r.status; o._rk=rk; }
+      else if(o._sd && r.date.getTime()===o._sd.getTime() && rk<o._rk){ o.status=r.status; o._rk=rk; }
+    }
+    const stBadge = raw => { const s=statusInfo(raw); return `<span class="st ${s.cls}">${s.txt}</span>`; };
+
     // ── Página da LP (A/B/C/D) a partir do nome da campanha ────────────────────
     // Regra: a letra da página é a que sobra DEPOIS do marcador de temperatura,
     // no FIM do nome. Sem letra sobrando → página C (foi a primeira, criada antes
@@ -679,14 +704,15 @@
     function campaigns(rows){
       const by={}, metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       for(const r of rows){ const key=r.campanha||'—'; let o=by[key];
-        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,raw:0};
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,raw:0,status:'',_sd:null,_rk:9};
         o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.raw+=r.compras;
+        accStatus(o,r);
       }
       const list=Object.values(by);
       const vend=vendasAdj(list.map(o=>o.raw), rows, list.map(o=>o.cost));   // soma = total da planilha
       return list.map((o,i)=>{ const v=vend[i], cpa=div(o.cost,v);
         let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
-        return { nome:o.nome, tipo:campType(o.nome), investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
+        return { nome:o.nome, tipo:campType(o.nome), status:o.status, investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
           cliques:o.clk, pv:o.pv, cr:div(o.pv,o.clk)*100, checkout:o.ic, vendas:v, txconv:div(v,o.ic)*100, cpa, al };
       }).sort((a,b)=>b.investido-a.investido);
     }
@@ -700,12 +726,12 @@
       let h=`<div class="lbl">Performance por Campanha (${camps.length}) · meta CPA R$ ${((DATA.metas&&DATA.metas.cpa)||71).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
         <input class="w3filter" placeholder="Filtrar por nome…" value="${_campFilter}" oninput="_campFilter=this.value.toLowerCase(); document.querySelectorAll('.crow').forEach(function(tr){ tr.style.display=tr.dataset.n.indexOf(_campFilter)>=0?'':'none'; });">
         <div class="twrap"><table><thead><tr>
-        ${sortTh('campanhas','nome','Campanha',1)}${sortTh('campanhas','tipo','Tipo')}${sortTh('campanhas','investido','Investido')}${sortTh('campanhas','imp','Impr.')}${sortTh('campanhas','ctr','CTR')}${sortTh('campanhas','cliques','Cliques')}${sortTh('campanhas','pv','PV')}${sortTh('campanhas','cr','CR%')}${sortTh('campanhas','checkout','Checkout')}${sortTh('campanhas','vendas','Vendas')}${sortTh('campanhas','txconv','Tx.Conv')}${sortTh('campanhas','cpa','CPA')}${sortTh('campanhas','al','Alerta')}
+        ${sortTh('campanhas','nome','Campanha',1)}${sortTh('campanhas','status','Status')}${sortTh('campanhas','tipo','Tipo')}${sortTh('campanhas','investido','Investido')}${sortTh('campanhas','imp','Impr.')}${sortTh('campanhas','ctr','CTR')}${sortTh('campanhas','cliques','Cliques')}${sortTh('campanhas','pv','PV')}${sortTh('campanhas','cr','CR%')}${sortTh('campanhas','checkout','Checkout')}${sortTh('campanhas','vendas','Vendas')}${sortTh('campanhas','txconv','Tx.Conv')}${sortTh('campanhas','cpa','CPA')}${sortTh('campanhas','al','Alerta')}
       </tr></thead><tbody>`;
-      if(!camps.length) h+=`<tr><td colspan="13" class="empty">Sem dados no período</td></tr>`;
+      if(!camps.length) h+=`<tr><td colspan="14" class="empty">Sem dados no período</td></tr>`;
       else for(const c of camps){ const a=AL[c.al], t=TP[c.tipo];
         h+=`<tr class="crow" data-n="${(c.nome||'').toLowerCase()}"><td title="${c.nome}">${c.nome}</td>
-          <td><span class="tp ${t[1]}">${t[0]}</span></td><td>${BRL(c.investido)}</td><td>${NUM(c.imp)}</td><td>${PCT(c.ctr)}</td>
+          <td>${stBadge(c.status)}</td><td><span class="tp ${t[1]}">${t[0]}</span></td><td>${BRL(c.investido)}</td><td>${NUM(c.imp)}</td><td>${PCT(c.ctr)}</td>
           <td>${NUM(c.cliques)}</td><td>${NUM(c.pv)}</td><td>${PCT(c.cr)}</td><td>${NUM(c.checkout)}</td><td>${NUM(c.vendas)}</td>
           <td>${PCT(c.txconv)}</td><td>${BRL(c.cpa)}</td><td><span class="al ${a[1]}">${a[0]}</span></td></tr>`;
       }
@@ -726,24 +752,25 @@
       const metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       const by={};
       for(const r of rows){ const key=r.adset||'—'; let o=by[key];
-        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,ic:0,raw:0};
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,ic:0,raw:0,status:'',_sd:null,_rk:9};
         o.cost+=r.cost;o.imp+=r.impressions;o.clk+=r.clicks;o.ic+=r.ic;o.raw+=r.compras;
+        accStatus(o,r);
       }
       const plist=Object.values(by);
       const pvend=vendasAdj(plist.map(o=>o.raw), rows, plist.map(o=>o.cost));   // soma = total da planilha
       const pubs=sortRows('publicos', plist.map((o,i)=>{ const v=pvend[i], cpa=div(o.cost,v);
         let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
-        return {nome:o.nome,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:v,cpa,al};
+        return {nome:o.nome,status:o.status,investido:o.cost,imp:o.imp,ctr:div(o.clk,o.imp)*100,cliques:o.clk,ic:o.ic,vendas:v,cpa,al};
       }), 'investido');
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Públicos — Performance por Ad Set (${pubs.length})</div>
         <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.purow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
         <div class="twrap"><table><thead><tr>
-        ${sortTh('publicos','nome','Público (Ad Set)',1)}${sortTh('publicos','investido','Investido')}${sortTh('publicos','imp','Impressões')}${sortTh('publicos','cliques','Cliques')}${sortTh('publicos','ctr','CTR')}${sortTh('publicos','ic','Init. Checkout')}${sortTh('publicos','vendas','Vendas')}${sortTh('publicos','cpa','CPA')}<th>Alerta</th>
+        ${sortTh('publicos','nome','Público (Ad Set)',1)}${sortTh('publicos','status','Status')}${sortTh('publicos','investido','Investido')}${sortTh('publicos','imp','Impressões')}${sortTh('publicos','cliques','Cliques')}${sortTh('publicos','ctr','CTR')}${sortTh('publicos','ic','Init. Checkout')}${sortTh('publicos','vendas','Vendas')}${sortTh('publicos','cpa','CPA')}<th>Alerta</th>
       </tr></thead><tbody>`;
-      if(!pubs.length) h+=`<tr><td colspan="9" class="empty">Sem dados no período</td></tr>`;
+      if(!pubs.length) h+=`<tr><td colspan="10" class="empty">Sem dados no período</td></tr>`;
       else for(const p of pubs){ const b=AL[p.al];
-        h+=`<tr class="purow" data-n="${(p.nome||'').toLowerCase()}"><td title="${p.nome}">${p.nome}</td><td>${BRL(p.investido)}</td><td>${NUM(p.imp)}</td><td>${NUM(p.cliques)}</td><td>${PCT(p.ctr)}</td><td>${NUM(p.ic)}</td><td>${NUM(p.vendas)}</td><td>${BRL(p.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td></tr>`;
+        h+=`<tr class="purow" data-n="${(p.nome||'').toLowerCase()}"><td title="${p.nome}">${p.nome}</td><td>${stBadge(p.status)}</td><td>${BRL(p.investido)}</td><td>${NUM(p.imp)}</td><td>${NUM(p.cliques)}</td><td>${PCT(p.ctr)}</td><td>${NUM(p.ic)}</td><td>${NUM(p.vendas)}</td><td>${BRL(p.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
@@ -757,11 +784,11 @@
       let h=`<div class="lbl">Criativos — Performance por Anúncio (${ads.length})</div>
         <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.crrow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
         <div class="twrap"><table><thead><tr>
-        ${sortTh('criativos','nome','Anúncio',1)}${sortTh('criativos','investido','Investido')}${sortTh('criativos','impressoes','Impressões')}${sortTh('criativos','cliques','Cliques')}${sortTh('criativos','ctr','CTR')}${sortTh('criativos','initiate_checkout','Init. Checkout')}${sortTh('criativos','vendas','Vendas')}${sortTh('criativos','cpa','CPA')}<th>Alerta</th><th>Link</th>
+        ${sortTh('criativos','nome','Anúncio',1)}${sortTh('criativos','status','Status')}${sortTh('criativos','investido','Investido')}${sortTh('criativos','impressoes','Impressões')}${sortTh('criativos','cliques','Cliques')}${sortTh('criativos','ctr','CTR')}${sortTh('criativos','initiate_checkout','Init. Checkout')}${sortTh('criativos','vendas','Vendas')}${sortTh('criativos','cpa','CPA')}<th>Alerta</th><th>Link</th>
       </tr></thead><tbody>`;
-      if(!ads.length) h+=`<tr><td colspan="10" class="empty">Sem dados no período</td></tr>`;
+      if(!ads.length) h+=`<tr><td colspan="11" class="empty">Sem dados no período</td></tr>`;
       else for(const a of ads){ let al='ok'; if(a.vendas===0) al='sem'; else if(a.cpa>metaCPA*1.5) al='critico'; else if(a.cpa>metaCPA) al='alto'; const b=AL[al];
-        h+=`<tr class="crrow" data-n="${(a.nome||'').toLowerCase()}"><td title="${a.nome}">${a.nome}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver criativo</a>`:'—'}</td></tr>`;
+        h+=`<tr class="crrow" data-n="${(a.nome||'').toLowerCase()}"><td title="${a.nome}">${a.nome}</td><td>${stBadge(a.status)}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver criativo</a>`:'—'}</td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
