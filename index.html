@@ -94,7 +94,12 @@
     td:first-child,th:first-child{ text-align:left; max-width:320px; white-space:normal; }
     tr:last-child td{ border-bottom:none; }
     .vlink{ color:var(--purple-light); text-decoration:none; font-size:.74rem; }
-    .w3filter{ width:100%; max-width:340px; margin:0 0 14px; padding:11px 14px; background:rgba(30,20,44,.7); border:1px solid rgba(150,95,190,.2); border-radius:10px; color:var(--text); font-family:inherit; font-size:.85rem; }
+    .w3filter{ width:100%; max-width:340px; margin:0; padding:11px 14px; background:rgba(30,20,44,.7); border:1px solid rgba(150,95,190,.2); border-radius:10px; color:var(--text); font-family:inherit; font-size:.85rem; }
+    .fbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 14px; }
+    .stbtns{ display:inline-flex; gap:6px; }
+    .stbtn{ padding:9px 14px; border-radius:9px; border:1px solid rgba(150,95,190,.28); background:rgba(30,20,44,.55); color:var(--muted); font-family:inherit; font-size:.8rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .stbtn:hover{ color:var(--text); border-color:rgba(150,95,190,.5); }
+    .stbtn.active{ background:var(--purple); border-color:var(--purple); color:#fff; }
     .w3filter::placeholder{ color:var(--muted); }
     th.sortable{ cursor:pointer; user-select:none; transition:color .12s; }
     th.sortable:hover{ color:var(--purple-light); }
@@ -681,6 +686,30 @@
       else if(o._sd && r.date.getTime()===o._sd.getTime() && rk<o._rk){ o.status=r.status; o._rk=rk; }
     }
     const stBadge = raw => { const s=statusInfo(raw); return `<span class="st ${s.cls}">${s.txt}</span>`; };
+    const stKey = raw => statusInfo(raw).cls.slice(3);   // 'on'|'off'|'bad'|'none'
+
+    // Filtro combinado (nome + status) por aba. Estado persiste entre re-renders
+    // (ordenação), então o filtro não some ao clicar num cabeçalho.
+    let _flt = { campanhas:{q:'',st:''}, publicos:{q:'',st:''}, criativos:{q:'',st:''} };
+    function filterBar(tab){
+      const f=_flt[tab];
+      const b=(v,lbl)=>`<button class="stbtn${f.st===v?' active':''}" onclick="setStFilter('${tab}','${v}',this)">${lbl}</button>`;
+      return `<div class="fbar"><input class="w3filter" id="w3f_${tab}" placeholder="Filtrar por nome…" value="${(f.q||'').replace(/"/g,'&quot;')}" oninput="_flt['${tab}'].q=this.value.toLowerCase();applyFilter('${tab}')">`+
+        `<div class="stbtns">${b('','Todas')}${b('on','🟢 Ativas')}${b('off','⏸ Pausadas')}</div></div>`;
+    }
+    function setStFilter(tab,val,btn){
+      _flt[tab].st=val;
+      if(btn){ btn.parentNode.querySelectorAll('.stbtn').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
+      applyFilter(tab);
+    }
+    function applyFilter(tab){
+      const sel={campanhas:'.crow',publicos:'.purow',criativos:'.crrow'}[tab], f=_flt[tab];
+      document.querySelectorAll(sel).forEach(function(tr){
+        const okN=(tr.dataset.n||'').indexOf(f.q||'')>=0;
+        const okS=!f.st||tr.dataset.st===f.st;
+        tr.style.display=(okN&&okS)?'':'none';
+      });
+    }
 
     // ── Página da LP (A/B/C/D) a partir do nome da campanha ────────────────────
     // Regra: a letra da página é a que sobra DEPOIS do marcador de temperatura,
@@ -724,19 +753,20 @@
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       const TP={quente:['🔥 Quente','tp-q'],frio:['❄ Frio','tp-f'],'—':['—','tp-n']};
       let h=`<div class="lbl">Performance por Campanha (${camps.length}) · meta CPA R$ ${((DATA.metas&&DATA.metas.cpa)||71).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-        <input class="w3filter" placeholder="Filtrar por nome…" value="${_campFilter}" oninput="_campFilter=this.value.toLowerCase(); document.querySelectorAll('.crow').forEach(function(tr){ tr.style.display=tr.dataset.n.indexOf(_campFilter)>=0?'':'none'; });">
+        ${filterBar('campanhas')}
         <div class="twrap"><table><thead><tr>
         ${sortTh('campanhas','nome','Campanha',1)}${sortTh('campanhas','status','Status')}${sortTh('campanhas','tipo','Tipo')}${sortTh('campanhas','investido','Investido')}${sortTh('campanhas','imp','Impr.')}${sortTh('campanhas','ctr','CTR')}${sortTh('campanhas','cliques','Cliques')}${sortTh('campanhas','pv','PV')}${sortTh('campanhas','cr','CR%')}${sortTh('campanhas','checkout','Checkout')}${sortTh('campanhas','vendas','Vendas')}${sortTh('campanhas','txconv','Tx.Conv')}${sortTh('campanhas','cpa','CPA')}${sortTh('campanhas','al','Alerta')}
       </tr></thead><tbody>`;
       if(!camps.length) h+=`<tr><td colspan="14" class="empty">Sem dados no período</td></tr>`;
       else for(const c of camps){ const a=AL[c.al], t=TP[c.tipo];
-        h+=`<tr class="crow" data-n="${(c.nome||'').toLowerCase()}"><td title="${c.nome}">${c.nome}</td>
+        h+=`<tr class="crow" data-n="${(c.nome||'').toLowerCase()}" data-st="${stKey(c.status)}"><td title="${c.nome}">${c.nome}</td>
           <td>${stBadge(c.status)}</td><td><span class="tp ${t[1]}">${t[0]}</span></td><td>${BRL(c.investido)}</td><td>${NUM(c.imp)}</td><td>${PCT(c.ctr)}</td>
           <td>${NUM(c.cliques)}</td><td>${NUM(c.pv)}</td><td>${PCT(c.cr)}</td><td>${NUM(c.checkout)}</td><td>${NUM(c.vendas)}</td>
           <td>${PCT(c.txconv)}</td><td>${BRL(c.cpa)}</td><td><span class="al ${a[1]}">${a[0]}</span></td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
+      applyFilter('campanhas');
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
     function _hbarTab(title, items, cid){
@@ -764,16 +794,17 @@
       }), 'investido');
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Públicos — Performance por Ad Set (${pubs.length})</div>
-        <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.purow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
+        ${filterBar('publicos')}
         <div class="twrap"><table><thead><tr>
         ${sortTh('publicos','nome','Público (Ad Set)',1)}${sortTh('publicos','status','Status')}${sortTh('publicos','investido','Investido')}${sortTh('publicos','imp','Impressões')}${sortTh('publicos','cliques','Cliques')}${sortTh('publicos','ctr','CTR')}${sortTh('publicos','ic','Init. Checkout')}${sortTh('publicos','vendas','Vendas')}${sortTh('publicos','cpa','CPA')}<th>Alerta</th>
       </tr></thead><tbody>`;
       if(!pubs.length) h+=`<tr><td colspan="10" class="empty">Sem dados no período</td></tr>`;
       else for(const p of pubs){ const b=AL[p.al];
-        h+=`<tr class="purow" data-n="${(p.nome||'').toLowerCase()}"><td title="${p.nome}">${p.nome}</td><td>${stBadge(p.status)}</td><td>${BRL(p.investido)}</td><td>${NUM(p.imp)}</td><td>${NUM(p.cliques)}</td><td>${PCT(p.ctr)}</td><td>${NUM(p.ic)}</td><td>${NUM(p.vendas)}</td><td>${BRL(p.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td></tr>`;
+        h+=`<tr class="purow" data-n="${(p.nome||'').toLowerCase()}" data-st="${stKey(p.status)}"><td title="${p.nome}">${p.nome}</td><td>${stBadge(p.status)}</td><td>${BRL(p.investido)}</td><td>${NUM(p.imp)}</td><td>${NUM(p.cliques)}</td><td>${PCT(p.ctr)}</td><td>${NUM(p.ic)}</td><td>${NUM(p.vendas)}</td><td>${BRL(p.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
+      applyFilter('publicos');
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
     function renderCriativos(){
@@ -782,16 +813,17 @@
       const metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       const AL={ok:['OK','al-ok'],alto:['CPA Alto','al-alto'],critico:['CPA Crítico','al-crit'],sem:['Sem Venda','al-sem']};
       let h=`<div class="lbl">Criativos — Performance por Anúncio (${ads.length})</div>
-        <input class="w3filter" placeholder="Filtrar por nome…" oninput="var q=this.value.toLowerCase();document.querySelectorAll('.crrow').forEach(function(tr){tr.style.display=tr.dataset.n.indexOf(q)>=0?'':'none';});">
+        ${filterBar('criativos')}
         <div class="twrap"><table><thead><tr>
         ${sortTh('criativos','nome','Anúncio',1)}${sortTh('criativos','status','Status')}${sortTh('criativos','investido','Investido')}${sortTh('criativos','impressoes','Impressões')}${sortTh('criativos','cliques','Cliques')}${sortTh('criativos','ctr','CTR')}${sortTh('criativos','initiate_checkout','Init. Checkout')}${sortTh('criativos','vendas','Vendas')}${sortTh('criativos','cpa','CPA')}<th>Alerta</th><th>Link</th>
       </tr></thead><tbody>`;
       if(!ads.length) h+=`<tr><td colspan="11" class="empty">Sem dados no período</td></tr>`;
       else for(const a of ads){ let al='ok'; if(a.vendas===0) al='sem'; else if(a.cpa>metaCPA*1.5) al='critico'; else if(a.cpa>metaCPA) al='alto'; const b=AL[al];
-        h+=`<tr class="crrow" data-n="${(a.nome||'').toLowerCase()}"><td title="${a.nome}">${a.nome}</td><td>${stBadge(a.status)}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver criativo</a>`:'—'}</td></tr>`;
+        h+=`<tr class="crrow" data-n="${(a.nome||'').toLowerCase()}" data-st="${stKey(a.status)}"><td title="${a.nome}">${a.nome}</td><td>${stBadge(a.status)}</td><td>${BRL(a.investido)}</td><td>${NUM(a.impressoes)}</td><td>${NUM(a.cliques)}</td><td>${PCT(a.ctr)}</td><td>${NUM(a.initiate_checkout)}</td><td>${NUM(a.vendas)}</td><td>${BRL(a.cpa)}</td><td><span class="al ${b[1]}">${b[0]}</span></td><td>${a.link?`<a class="vlink" href="${a.link}" target="_blank">▶ ver criativo</a>`:'—'}</td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
+      applyFilter('criativos');
       document.getElementById('updated').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     }
 
