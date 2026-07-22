@@ -290,7 +290,10 @@
         // cumDaily(), que é o que deixa o filtro de data funcionar em cima delas.
         series.push({ date:d, org, paceDia:cNum(c[4]), total,
           ads:cNum(c[10])+cNum(c[11]), startAds:cNum(c[10]), vipAds:cNum(c[11]),
-          startOrg:cNum(c[8]), vipOrg:cNum(c[9]), waStart:cNum(c[1]), waVip:cNum(c[2]), hasData:has });
+          startOrg:cNum(c[8]), vipOrg:cNum(c[9]), waStart:cNum(c[1]), waVip:cNum(c[2]),
+          // Popups de ADS por página (START+VIP) — base pra dividir a venda na LP.
+          pMaluB:cNum(c[18])+cNum(c[19]), pMaluC:cNum(c[20])+cNum(c[21]),
+          pHireC:cNum(c[26])+cNum(c[27]), pHireD:cNum(c[28])+cNum(c[29]), hasData:has });
         if(has){ dias++;
           latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
             vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
@@ -841,25 +844,25 @@
       return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:div(pv,clk)*100,
         tx_checkout:div(ic,pv)*100, tx_venda:div(vd,ic)*100, conv:div(vd,clk)*100, cpa:div(cost,vd) };
     }
-    // Vendas por página: cada página mostra a compra REAL do Meta (valor original);
-    // a página C de cada perfil absorve a diferença até o total da planilha (fonte
-    // de verdade), porque é a principal e onde está o sub-reporte do Meta.
+    // Vendas por página. Base = POPUPS de ads por página (colunas da planilha
+    // MÉTRICAS), que é a distribuição real. A página C de cada perfil absorve a
+    // diferença até o total do perfil (planilha). A Malu A não tem coluna de popup
+    // → o peso dela vem direto da fonte de dados (compras do Meta).
     function pageVendas(lps){
       const out={};
+      const W={ 'LP Malu B':cumInRange('pMaluB'), 'LP Malu C':cumInRange('pMaluC'),
+                'LP Hire C':cumInRange('pHireC'), 'LP Hire D':cumInRange('pHireD') };
+      const peso=lp=>(W[lp.nome]!=null && W[lp.nome]>0) ? W[lp.nome] : lp.rows.reduce((s,r)=>s+r.compras,0);
       for(const perfil of ['Malu','Hire']){
         const pref='LP '+perfil+' ';
+        const pages=lps.filter(l=>l.nome.indexOf(pref)===0);
         const prows=(perfil==='Malu'?DATA.malu:DATA.hire).filter(r=>inRange(r.date));
-        const target=viewTarget(prows);             // total do perfil pela planilha
+        const target=viewTarget(prows);
+        if(target==null){ for(const lp of pages) out[lp.nome]=lp.rows.reduce((s,r)=>s+r.compras,0); continue; }
+        const Wsum=pages.reduce((s,lp)=>s+peso(lp),0)||1;
         let nonC=0;
-        for(const lp of lps){ if(lp.nome.indexOf(pref)!==0) continue;
-          const pg=lp.nome.slice(pref.length);
-          const raw=lp.rows.reduce((s,r)=>s+r.compras,0);
-          if(pg!=='C'){ out[lp.nome]=raw; nonC+=raw; }
-        }
-        for(const lp of lps){ if(lp.nome.indexOf(pref)!==0) continue;
-          if(lp.nome.slice(pref.length)==='C')
-            out[lp.nome]= target==null ? lp.rows.reduce((s,r)=>s+r.compras,0) : Math.max(0, Math.round(target)-nonC);
-        }
+        for(const lp of pages){ if(lp.nome.slice(pref.length)!=='C'){ const v=Math.round(Math.round(target)*peso(lp)/Wsum); out[lp.nome]=v; nonC+=v; } }
+        for(const lp of pages){ if(lp.nome.slice(pref.length)==='C') out[lp.nome]=Math.max(0, Math.round(target)-nonC); }
       }
       return out;
     }
