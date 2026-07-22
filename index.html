@@ -833,12 +833,35 @@
     }
 
     // LP: Malu (malu-ads-c) = campanhas [MALU]; Hire (hire-ads-c) = [HIRE]. Funil por LP (estilo WICI2).
-    function lpAgg(rows){
+    function lpAgg(rows, vdOverride){
       let cost=0,imp=0,clk=0,pv=0,ic=0,vd=0;
       for(const r of rows){ cost+=r.cost;imp+=r.impressions;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;vd+=r.compras; }
-      const t=viewTarget(rows); if(t!=null) vd=t;   // vendas da planilha, não do Meta
+      if(vdOverride!=null) vd=vdOverride;            // vendas por página (regra da LP)
+      else { const t=viewTarget(rows); if(t!=null) vd=t; }   // total: planilha
       return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:div(pv,clk)*100,
         tx_checkout:div(ic,pv)*100, tx_venda:div(vd,ic)*100, conv:div(vd,clk)*100, cpa:div(cost,vd) };
+    }
+    // Vendas por página: cada página mostra a compra REAL do Meta (valor original);
+    // a página C de cada perfil absorve a diferença até o total da planilha (fonte
+    // de verdade), porque é a principal e onde está o sub-reporte do Meta.
+    function pageVendas(lps){
+      const out={};
+      for(const perfil of ['Malu','Hire']){
+        const pref='LP '+perfil+' ';
+        const prows=(perfil==='Malu'?DATA.malu:DATA.hire).filter(r=>inRange(r.date));
+        const target=viewTarget(prows);             // total do perfil pela planilha
+        let nonC=0;
+        for(const lp of lps){ if(lp.nome.indexOf(pref)!==0) continue;
+          const pg=lp.nome.slice(pref.length);
+          const raw=lp.rows.reduce((s,r)=>s+r.compras,0);
+          if(pg!=='C'){ out[lp.nome]=raw; nonC+=raw; }
+        }
+        for(const lp of lps){ if(lp.nome.indexOf(pref)!==0) continue;
+          if(lp.nome.slice(pref.length)==='C')
+            out[lp.nome]= target==null ? lp.rows.reduce((s,r)=>s+r.compras,0) : Math.max(0, Math.round(target)-nonC);
+        }
+      }
+      return out;
     }
     function lpDaily(rows){
       const map={}, adsD=adsByDay(rows);
@@ -879,7 +902,10 @@
       // Soma TODAS as páginas. Era lps[0]+lps[1] fixo (de quando só existiam Malu
       // e Hire) — com 3+ páginas isso silenciosamente deixava as demais de fora.
       const _allRows=lps.reduce((a,l)=>a.concat(l.rows),[]);
+      const vendMap=pageVendas(lps);                              // venda por página
       const g=lpAgg(_allRows);
+      g.vendas=Object.values(vendMap).reduce((a,b)=>a+b,0);       // GERAL = soma dos painéis
+      g.cpa=div(g.investido,g.vendas);
       const _lbl='GERAL ('+lps.map(l=>l.nome.replace('LP ','')).join(' + ')+')';
       let h=`<div class="lp-geral"><div class="lp-geral-lbl">${_lbl}</div><div class="lp-geral-stats">
         <div><div class="lp-meta-lbl">Total Gasto</div><div class="lp-meta-val">${BRL(g.investido)}</div></div>
@@ -888,7 +914,7 @@
         <div><div class="lp-meta-lbl">Total Vendas</div><div class="lp-meta-val">${NUM(g.vendas)}</div></div>
       </div></div><div class="lp-grid">`;
       const jobs=[];
-      lps.forEach((lp,i)=>{ const a=lpAgg(lp.rows), d=lpDaily(lp.rows);
+      lps.forEach((lp,i)=>{ const a=lpAgg(lp.rows, vendMap[lp.nome]), d=lpDaily(lp.rows);
         const steps=[
           {n:'IMPRESSÕES', v:a.imp, wt:100, wb:86, rate:'CTR '+PCT(a.ctr)},
           {n:'CLIQUES NO LINK', v:a.cliques, wt:80, wb:66, rate:'CONNECT '+PCT(a.connect)},
