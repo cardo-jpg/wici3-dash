@@ -155,7 +155,7 @@
       <div class="top-r">
         <span class="live">AO VIVO</span>
         <div class="presets" id="presets">
-          <button class="preset" data-d="0" onclick="setPreset(this)">Hoje</button>
+          <button class="preset" data-d="1" onclick="setPreset(this)">Ontem</button>
           <button class="preset" data-d="3" onclick="setPreset(this)">3 dias</button>
           <button class="preset" data-d="7" onclick="setPreset(this)">7 dias</button>
           <button class="preset" data-d="14" onclick="setPreset(this)">14 dias</button>
@@ -182,7 +182,7 @@
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
-    <div class="foot" id="foot">Atualiza automaticamente a cada abertura · dados a partir de 13/07</div>
+    <div class="foot" id="foot">Atualiza automaticamente a cada abertura · dados de 13/07 até o dia anterior (o dia atual entra só quando as vendas são lançadas)</div>
   </div>
 
   <script>
@@ -391,7 +391,12 @@
       const c=new Date(t); c.setDate(c.getDate()-Number(presetDays));
       return c<FLOOR?FLOOR:c;
     }
+    // Teto = ONTEM. Nunca mostra o dia atual, porque o gasto do dia já entra no
+    // Meta mas a venda ainda não foi lançada na planilha MÉTRICAS — o que fazia o
+    // CPA de hoje estourar (gasto ÷ 0 venda). Máximo visível: D-1.
+    function ontem(){ const y=new Date(); y.setHours(0,0,0,0); y.setDate(y.getDate()-1); return y; }
     const inRange = d => {
+      if(d>ontem()) return false;
       if(fStart && d<fStart) return false;
       if(fEnd   && d>fEnd)   return false;
       return d>=cutoff();
