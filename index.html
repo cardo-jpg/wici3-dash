@@ -852,7 +852,11 @@
       const out={};
       const W={ 'LP Malu B':cumInRange('pMaluB'), 'LP Malu C':cumInRange('pMaluC'),
                 'LP Hire C':cumInRange('pHireC'), 'LP Hire D':cumInRange('pHireD') };
-      const peso=lp=>(W[lp.nome]!=null && W[lp.nome]>0) ? W[lp.nome] : lp.rows.reduce((s,r)=>s+r.compras,0);
+      // Peso = popup da página. Página SEM coluna de popup (ex.: Malu A) → peso 0,
+      // ou seja 0 vendas: sem popup preenchido não há conversão rastreada nela, e a
+      // diferença vai pra C. (A cliente confirmou que a A não tem popup — os anúncios
+      // que estavam como _A foram renomeados pra _B.)
+      const peso=lp=>(W[lp.nome]!=null) ? W[lp.nome] : 0;
       for(const perfil of ['Malu','Hire']){
         const pref='LP '+perfil+' ';
         const pages=lps.filter(l=>l.nome.indexOf(pref)===0);
