@@ -729,6 +729,10 @@
       if(!m) return 'C';
       const L=m[1].toUpperCase();
       if(L==='F'||L==='Q') return 'C';
+      // Página A não existe (cliente confirmou: sem popup). As campanhas que ficaram
+      // como _A foram renomeadas pra _B, mas o Stract guarda o histórico com o nome
+      // antigo — então tratamos A como B pra juntar as linhas antigas com as novas.
+      if(L==='A') return 'B';
       return L;
     }
     // URL de cada página. Atenção à inversão: na URL a página A NÃO tem sufixo
