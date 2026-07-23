@@ -861,7 +861,12 @@
         if(target==null){ for(const lp of pages) out[lp.nome]=lp.rows.reduce((s,r)=>s+r.compras,0); continue; }
         const Wsum=pages.reduce((s,lp)=>s+peso(lp),0)||1;
         let nonC=0;
-        for(const lp of pages){ if(lp.nome.slice(pref.length)!=='C'){ const v=Math.round(Math.round(target)*peso(lp)/Wsum); out[lp.nome]=v; nonC+=v; } }
+        for(const lp of pages){ if(lp.nome.slice(pref.length)!=='C'){
+          const prop=Math.round(Math.round(target)*peso(lp)/Wsum);
+          const chk=lp.rows.reduce((s,r)=>s+r.ic,0);          // checkout da página
+          const v=Math.min(prop, chk);                         // venda nunca passa do checkout
+          out[lp.nome]=v; nonC+=v; } }
+        // C absorve o resto (a diferença + o excesso que não coube nas outras).
         for(const lp of pages){ if(lp.nome.slice(pref.length)==='C') out[lp.nome]=Math.max(0, Math.round(target)-nonC); }
       }
       return out;
