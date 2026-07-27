@@ -292,8 +292,10 @@
           ads:cNum(c[10])+cNum(c[11]), startAds:cNum(c[10]), vipAds:cNum(c[11]),
           startOrg:cNum(c[8]), vipOrg:cNum(c[9]), waStart:cNum(c[1]), waVip:cNum(c[2]),
           // Popups de ADS por página (START+VIP) — base pra dividir a venda na LP.
-          pMaluB:cNum(c[18])+cNum(c[19]), pMaluC:cNum(c[20])+cNum(c[21]),
-          pHireC:cNum(c[26])+cNum(c[27]), pHireD:cNum(c[28])+cNum(c[29]), hasData:has });
+          // Colunas reais MÉTRICAS: Malu A=18/19, B=20/21, C=22/23 · Hire C=28/29, D=30/31
+          // (26/27 é ORGÂNICO da Hire, não entra). A dobra a A (=0) em B por segurança.
+          pMaluB:cNum(c[20])+cNum(c[21])+cNum(c[18])+cNum(c[19]), pMaluC:cNum(c[22])+cNum(c[23]),
+          pHireC:cNum(c[28])+cNum(c[29]), pHireD:cNum(c[30])+cNum(c[31]), hasData:has });
         if(has){ dias++;
           latest={ data:d, whatsapp_start:cNum(c[1]), whatsapp_vip:cNum(c[2]),
             vendas_org:org, pace_diario:cNum(c[4]), pace_medio:cNum(c[5]), falta_meta:cNum(c[6]), pct_meta:parseBR(cStr(c[7])),
