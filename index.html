@@ -408,6 +408,18 @@
     };
 
     // ── Aggregation ─────────────────────────────────────────────────────────────
+    // Connect rate HONESTO: ignora dias com CLIQUE mas ZERO page view — isso é
+    // rastreamento furado (o pixel não registrou a visita; centenas de cliques
+    // com 0 PV é impossível). Sem isso, um dia de tracking quebrado derruba o
+    // connect geral (ex.: 25/07 = 813 cliques / 0 PV puxou o geral de ~80% p/ 52%).
+    // Agrega por dia e soma só os dias com rastreamento válido.
+    function connectAgg(rows){
+      const byDay={};
+      for(const r of rows){ const k=dkey(r.date); const o=byDay[k]||(byDay[k]={clk:0,pv:0}); o.clk+=r.clicks; o.pv+=r.pageview; }
+      let clk=0,pv=0;
+      for(const k in byDay){ const o=byDay[k]; if(o.pv===0 && o.clk>0) continue; clk+=o.clk; pv+=o.pv; }
+      return div(pv,clk)*100;
+    }
     function metaAgg(rows){
       let cost=0,imp=0,reach=0,clk=0,pv=0,ic=0,comp=0,fat=0;
       for(const r of rows){ cost+=r.cost;imp+=r.impressions;reach+=r.reach;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;comp+=r.compras;fat+=r.faturamento; }
@@ -415,7 +427,7 @@
       // CPA/ticket/tx de conversão saírem certos em TODAS as abas de uma vez.
       const t=viewTarget(rows); if(t!=null) comp=t;
       return { investido:cost, impressoes:imp, alcance:reach, cliques:clk, pageviews:pv, initiate_checkout:ic, vendas:comp, faturamento:fat,
-        ctr:div(clk,imp)*100, cpm:div(cost,imp)*1000, cpc:div(cost,clk), cpa:div(cost,comp), roas:div(fat,cost), ticket:div(fat,comp), connect_rate:div(pv,clk)*100 };
+        ctr:div(clk,imp)*100, cpm:div(cost,imp)*1000, cpc:div(cost,clk), cpa:div(cost,comp), roas:div(fat,cost), ticket:div(fat,comp), connect_rate:connectAgg(rows) };
     }
     function topBy(rows, field, n){
       const by={}; for(const r of rows){ const k=r[field]||'—'; by[k]=(by[k]||0)+1; }
@@ -747,16 +759,16 @@
     function campaigns(rows){
       const by={}, metaCPA=(DATA.metas&&DATA.metas.cpa)||71;
       for(const r of rows){ const key=r.campanha||'—'; let o=by[key];
-        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,raw:0,status:'',_sd:null,_rk:9};
+        if(!o) o=by[key]={nome:key,cost:0,imp:0,clk:0,pv:0,ic:0,raw:0,status:'',_sd:null,_rk:9,_rows:[]};
         o.cost+=r.cost; o.imp+=r.impressions; o.clk+=r.clicks; o.pv+=r.pageview; o.ic+=r.ic; o.raw+=r.compras;
-        accStatus(o,r);
+        o._rows.push(r); accStatus(o,r);
       }
       const list=Object.values(by);
       const vend=vendasAdj(list.map(o=>o.raw), rows, list.map(o=>o.cost));   // soma = total da planilha
       return list.map((o,i)=>{ const v=vend[i], cpa=div(o.cost,v);
         let al='ok'; if(v===0) al='sem'; else if(cpa>metaCPA*1.5) al='critico'; else if(cpa>metaCPA) al='alto';
         return { nome:o.nome, tipo:campType(o.nome), status:o.status, investido:o.cost, imp:o.imp, ctr:div(o.clk,o.imp)*100,
-          cliques:o.clk, pv:o.pv, cr:div(o.pv,o.clk)*100, checkout:o.ic, vendas:v, txconv:div(v,o.ic)*100, cpa, al };
+          cliques:o.clk, pv:o.pv, cr:connectAgg(o._rows), checkout:o.ic, vendas:v, txconv:div(v,o.ic)*100, cpa, al };
       }).sort((a,b)=>b.investido-a.investido);
     }
     let _campFilter='';
@@ -847,7 +859,7 @@
       for(const r of rows){ cost+=r.cost;imp+=r.impressions;clk+=r.clicks;pv+=r.pageview;ic+=r.ic;vd+=r.compras; }
       if(vdOverride!=null) vd=vdOverride;            // vendas por página (regra da LP)
       else { const t=viewTarget(rows); if(t!=null) vd=t; }   // total: planilha
-      return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:div(pv,clk)*100,
+      return { investido:cost, imp, cliques:clk, pv, ic, vendas:vd, ctr:div(clk,imp)*100, connect:connectAgg(rows),
         tx_checkout:div(ic,pv)*100, tx_venda:div(vd,ic)*100, conv:div(vd,clk)*100, cpa:div(cost,vd) };
     }
     // Vendas por página. Base = POPUPS de ads por página (colunas da planilha
@@ -887,7 +899,7 @@
       for(const k in map) map[k].vd = adsD[k]||0;   // vendas/dia da planilha
       const keys=Object.keys(map).sort();
       return { labels:keys.map(k=>{const p=k.split('-');return p[2]+'/'+p[1];}),
-        connect:keys.map(k=>{const o=map[k];return o.clk?+(o.pv/o.clk*100).toFixed(2):null;}),
+        connect:keys.map(k=>{const o=map[k];return (o.clk&&o.pv>0)?+(o.pv/o.clk*100).toFixed(2):null;}),
         checkout:keys.map(k=>{const o=map[k];return o.pv?+(o.ic/o.pv*100).toFixed(2):null;}),
         txconv:keys.map(k=>{const o=map[k];return o.ic?+(o.vd/o.ic*100).toFixed(2):null;}),
         txconvpv:keys.map(k=>{const o=map[k];return o.pv?+(o.vd/o.pv*100).toFixed(2):null;}) };
