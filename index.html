@@ -159,8 +159,8 @@
     .pq-card .pq-cw{ position:relative; height:300px; }
     .pq-card.pq-wide{ grid-column:1 / -1; }
     .pq-card.pq-wide .pq-cw{ height:400px; }
-    .pq-card .wc{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; align-content:center; gap:2px 20px; padding:16px 8px; min-height:300px; line-height:1.02; }
-    .wcw{ font-weight:800; letter-spacing:-.01em; cursor:default; transition:transform .12s; white-space:nowrap; }
+    .pq-card .wc{ display:flex; flex-direction:column; flex-wrap:nowrap; align-items:center; justify-content:center; gap:6px; padding:28px 12px; min-height:260px; line-height:1.08; }
+    .wcw{ font-weight:800; letter-spacing:-.01em; cursor:default; transition:transform .12s; white-space:nowrap; text-align:center; }
     .wcw:hover{ transform:scale(1.09); }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
@@ -665,7 +665,7 @@
     const _pqFoco=v=>/remoto/i.test(v)?'Trabalho remoto':/moeda|ganhar/i.test(v)?'Moeda forte':/sair/i.test(v)?'Sair do Brasil':(v||'—');
     const _pqProf=v=>{ v=(v||'').split('(')[0].trim(); return /^outro/i.test(v)?'':v; };  // '' = ignora "OUTRO"
     const _pqCard=(t,id,cls)=>`<div class="pq-card ${cls||''}"><h4>${t}</h4><div class="pq-cw"><canvas id="${id}"></canvas></div></div>`;
-    const _pqCloud=(t,id)=>`<div class="pq-card"><h4>${t}</h4><div class="wc" id="${id}"></div></div>`;
+    const _pqCloud=(t,id)=>`<div class="pq-card pq-wide"><h4>${t}</h4><div class="wc" id="${id}"></div></div>`;
     const _pqPct=(n,d)=>d?Math.round(n/d*100)+'%':'—';
     // Nuvem de palavras (CSS): tamanho da fonte proporcional à frequência.
     function wordCloud(id, items){
@@ -698,11 +698,11 @@
         </div>
         <div class="pq-grid">
           ${_pqCloud('🎯 Foco hoje','pqFoco')}
+          ${_pqCloud('💼 Área / profissão','pqProf')}
           ${_pqCard('🗣️ Nível de inglês','pqIng')}
           ${_pqCard('💰 Faixa salarial','pqSal')}
           ${_pqCard('📈 Experiência','pqExp')}
           ${_pqCard('🎂 Idade','pqIda')}
-          ${_pqCloud('💼 Área / profissão','pqProf')}
           ${_pqCard('🇪🇺 Passaporte europeu','pqPass')}
           ${_pqCard('✈️ Já morou fora?','pqFora')}
           ${_pqCard('👀 Há quanto tempo segue','pqSeg')}
