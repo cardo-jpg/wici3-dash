@@ -700,8 +700,7 @@
           <div class="pk"><div class="pk-l">Sem passaporte UE</div><div class="pk-v">${_pqPct(pass,N0)}</div><div class="pk-n">precisam de visto</div></div>
         </div>
         <div class="pq-grid">
-          ${_pqCloud('🎯 Foco hoje','pqFoco')}
-          ${_pqCloud('💼 Área / profissão','pqProf')}
+          ${_pqCard('🎯 Foco hoje','pqFoco')}
           ${_pqCard('🗣️ Nível de inglês','pqIng')}
           ${_pqCard('💰 Faixa salarial','pqSal')}
           ${_pqCard('📈 Experiência','pqExp')}
@@ -709,9 +708,10 @@
           ${_pqCard('🇪🇺 Passaporte europeu','pqPass')}
           ${_pqCard('✈️ Já morou fora?','pqFora')}
           ${_pqCard('👀 Há quanto tempo segue','pqSeg')}
+          ${_pqCloud('💼 Área / profissão','pqProf')}
           ${_pqCard('📍 Estado','pqEst','pq-wide')}
         </div>`;
-      wordCloud('pqFoco',_pqAgg(5,null,_pqFoco));
+      pie('pqFoco',_pqAgg(5,null,_pqFoco));
       pie('pqIng',_pqAgg(10));
       pie('pqSal',_pqAgg(6));
       hbar('pqExp',_pqAgg(7));
