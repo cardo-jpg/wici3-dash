@@ -148,7 +148,9 @@
     .lp-chart-title{ font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:10px; }
     .lp-chart-h{ height:118px; }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
-    .pk-strip{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin:14px 0 24px; }
+    .pk-strip{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin:14px 0 24px; }
+    @media(max-width:1000px){ .pk-strip{ grid-template-columns:repeat(3,1fr); } }
+    @media(max-width:600px){ .pk-strip{ grid-template-columns:repeat(2,1fr); } }
     .pk{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px 22px; }
     .pk-l{ font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; }
     .pk-v{ font-size:2.5rem; font-weight:800; color:var(--purple-light); margin-top:6px; line-height:1; }
@@ -159,8 +161,9 @@
     .pq-card .pq-cw{ position:relative; height:300px; }
     .pq-card.pq-wide{ grid-column:1 / -1; }
     .pq-card.pq-wide .pq-cw{ height:400px; }
-    .pq-card .wc{ display:flex; flex-direction:column; flex-wrap:nowrap; align-items:center; justify-content:center; gap:6px; padding:28px 12px; min-height:260px; line-height:1.08; }
-    .wcw{ font-weight:800; letter-spacing:-.01em; cursor:default; transition:transform .12s; white-space:nowrap; text-align:center; }
+    .pq-card .wc{ display:flex; flex-wrap:wrap; align-items:center; align-content:center; justify-content:center; gap:4px 18px; padding:22px 16px; min-height:230px; line-height:1.05; }
+    .wcw{ font-weight:800; letter-spacing:-.01em; cursor:default; transition:transform .12s; white-space:nowrap; }
+    .wcw:hover{ transform:scale(1.1); }
     .wcw:hover{ transform:scale(1.09); }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
