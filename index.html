@@ -148,6 +148,15 @@
     .lp-chart-title{ font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:10px; }
     .lp-chart-h{ height:118px; }
     .empty,.loading{ text-align:center; color:var(--muted); padding:34px; }
+    .pk-strip{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:14px 0 22px; }
+    .pk{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+    .pk-l{ font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:700; }
+    .pk-v{ font-size:1.75rem; font-weight:800; color:var(--purple-light); margin-top:4px; }
+    .pk-n{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+    .pq-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
+    .pq-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+    .pq-card h4{ font-size:.92rem; font-weight:700; color:var(--text); margin-bottom:12px; }
+    .pq-card .pq-cw{ position:relative; height:236px; }
     .err{ color:var(--red); }
     .foot{ margin-top:26px; font-size:.7rem; color:var(--muted); text-align:center; }
   </style>
@@ -183,6 +192,7 @@
       <button class="tab" data-p="publicos" onclick="setTab(this)">Públicos</button>
       <button class="tab" data-p="criativos" onclick="setTab(this)">Criativos</button>
       <button class="tab" data-p="lp" onclick="setTab(this)">LP</button>
+      <button class="tab" data-p="pesquisa" onclick="setTab(this)">Pesquisa</button>
     </div>
 
     <div id="body"><div class="loading">Carregando dados da planilha…</div></div>
@@ -636,12 +646,64 @@
         plugins:[valPlugin] }));
     }
 
+    // ── Aba PESQUISA (credenciamento) — lê a planilha da pesquisa e agrega ao vivo ──
+    const SHEET_PESQUISA='1kQYVgEw6G1aHse-LVZzpIA3XT7UHDJEuKvLNJ01c880';
+    let _pesq=null;
+    const _ps=c=>(c&&c.v!=null)?String(c.v).trim():'';
+    function _pqAgg(idx, top, norm){
+      const m={};
+      for(const r of _pesq){ const raw=_ps(r.c[idx]); const v=norm?norm(raw):(raw||'—'); if(v==null||v==='') continue; m[v]=(m[v]||0)+1; }
+      const a=Object.entries(m).map(([label,count])=>({label,count})).sort((x,y)=>y.count-x.count);
+      return top?a.slice(0,top):a;
+    }
+    const _pqSN=v=>/^s/i.test(v)?'Sim':(/^n/i.test(v)?'Não':(v||'—'));
+    const _pqCard=(t,id)=>`<div class="pq-card"><h4>${t}</h4><div class="pq-cw"><canvas id="${id}"></canvas></div></div>`;
+    const _pqPct=(n,d)=>d?Math.round(n/d*100)+'%':'—';
+    async function renderPesquisa(){
+      killCharts();
+      const body=document.getElementById('body');
+      if(!_pesq){
+        body.innerHTML='<div class="loading">Carregando a pesquisa…</div>';
+        try{ const t=await gviz(SHEET_PESQUISA,'gid=0'); _pesq=(t.rows||[]).filter(r=>r.c&&_ps(r.c[6])); }
+        catch(e){ body.innerHTML='<div class="empty err">Erro ao carregar a pesquisa: '+e.message+'</div>'; return; }
+      }
+      const N0=_pesq.length, cnt=(i,p)=>_pesq.filter(r=>p(_ps(r.c[i]))).length;
+      const ing=cnt(10,v=>/fluente|me viro/i.test(v)), exp5=cnt(7,v=>/mais de 10|5 a 10/i.test(v)),
+        sal5=cnt(6,v=>/5 a 10|mais de 10/i.test(v)), pass=cnt(9,v=>/^n/i.test(v));
+      body.innerHTML=`<div class="lbl">Pesquisa de credenciamento · ${NUM(N0)} respostas · atualiza sozinho</div>
+        <div class="pk-strip">
+          <div class="pk"><div class="pk-l">Respostas</div><div class="pk-v">${NUM(N0)}</div><div class="pk-n">total</div></div>
+          <div class="pk"><div class="pk-l">Inglês interm.+</div><div class="pk-v">${_pqPct(ing,N0)}</div><div class="pk-n">fluente ou "me viro"</div></div>
+          <div class="pk"><div class="pk-l">Exp. 5+ anos</div><div class="pk-v">${_pqPct(exp5,N0)}</div><div class="pk-n">senioridade</div></div>
+          <div class="pk"><div class="pk-l">Salário 5k+</div><div class="pk-v">${_pqPct(sal5,N0)}</div><div class="pk-n">poder de compra</div></div>
+          <div class="pk"><div class="pk-l">Sem passaporte UE</div><div class="pk-v">${_pqPct(pass,N0)}</div><div class="pk-n">precisam de visto</div></div>
+        </div>
+        <div class="pq-grid">
+          ${_pqCard('🎯 Foco hoje','pqFoco')}
+          ${_pqCard('🗣️ Nível de inglês','pqIng')}
+          ${_pqCard('💰 Faixa salarial','pqSal')}
+          ${_pqCard('📈 Experiência','pqExp')}
+          ${_pqCard('🎂 Idade','pqIda')}
+          ${_pqCard('💼 Área / profissão','pqProf')}
+          ${_pqCard('📍 Estado','pqEst')}
+          ${_pqCard('🇪🇺 Passaporte europeu','pqPass')}
+          ${_pqCard('✈️ Já morou fora?','pqFora')}
+          ${_pqCard('👀 Há quanto tempo segue','pqSeg')}
+        </div>`;
+      pie('pqFoco',_pqAgg(5)); pie('pqIng',_pqAgg(10));
+      hbar('pqSal',_pqAgg(6)); hbar('pqExp',_pqAgg(7)); hbar('pqIda',_pqAgg(3));
+      hbar('pqProf',_pqAgg(13,12)); hbar('pqEst',_pqAgg(17,12));
+      pie('pqPass',_pqAgg(9,null,_pqSN)); pie('pqFora',_pqAgg(16)); hbar('pqSeg',_pqAgg(15));
+      const u=document.getElementById('updated'); if(u) u.textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    }
+
     let view='geral';
     function route(){
       if(view==='campanhas') return renderCampanhas();
       if(view==='publicos') return renderPublicos();
       if(view==='criativos') return renderCriativos();
       if(view==='lp') return renderLP();
+      if(view==='pesquisa') return renderPesquisa();
       profile=view; render();
     }
     function setTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); view=el.dataset.p; route(); }
