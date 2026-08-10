@@ -324,10 +324,11 @@
             start_org:cNum(c[8]), vip_org:cNum(c[9]), start_ads:cNum(c[10]), vip_ads:cNum(c[11]), total };
         }
       }
-      // "FALTA PARA META" na planilha é calculado só sobre as vendas ORGÂNICAS (a
-      // coluna nasceu antes do tráfego existir) → meta real = falta + org = 1.800.
-      // Somar com o TOTAL daria 1.850, inflando a meta conforme o ads vende.
-      if(latest){ latest.meta = latest.falta_meta + latest.vendas_org; latest.dias = dias || 1;
+      // "FALTA PARA META" na planilha hoje desconta o TOTAL (org + ads), então a
+      // meta real = falta + total = 1.800, constante em toda a série. (Antes a coluna
+      // era só orgânica e usávamos falta + org; a fórmula da planilha mudou e passou
+      // a incluir o ads — somar só o org fazia a meta encolher p/ 1.800 − ads.)
+      if(latest){ latest.meta = latest.falta_meta + latest.total; latest.dias = dias || 1;
         latest.vendas_ads = latest.start_ads + latest.vip_ads; }
       return { latest, series };
     }
