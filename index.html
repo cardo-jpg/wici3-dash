@@ -1150,6 +1150,7 @@
       const rows=(DATA.vendas||[]).filter(r=>inRange(r.date));
       if(!rows.length){ document.getElementById('body').innerHTML='<div class="empty">Sem dados de vendas no período</div>'; upd(); return; }
       const g=vAgg(rows);
+      const cot=(DATA.metas&&DATA.metas.cotacao)||5.16;   // Investimento vem em US$ (conta Meta)
       const camps=[...new Set(rows.map(r=>r.campanha))].filter(x=>x&&x!=='—');
       // Funil
       const steps=[
@@ -1167,7 +1168,7 @@
       }
       fn+='</div>';
       // Header GERAL (KPIs de dinheiro)
-      let h=`<div class="lp-geral"><div class="lp-geral-lbl">MENTORIA MALU · Vendas${camps.length?' ('+camps.length+' camp.)':''}</div><div class="lp-geral-stats">
+      let h=`<div class="lp-geral"><div class="lp-geral-lbl">MENTORIA MALU · Vendas${camps.length?' ('+camps.length+' camp.)':''}<div style="font-size:.62rem;font-weight:600;opacity:.85;margin-top:3px;letter-spacing:.02em">💱 Investido convertido US$ → R$ (× ${cot.toLocaleString('pt-BR',{minimumFractionDigits:2})}) · Faturamento já em R$</div></div><div class="lp-geral-stats">
         <div><div class="lp-meta-lbl">Investido</div><div class="lp-meta-val">${BRL(g.inv)}</div></div>
         <div><div class="lp-meta-lbl">Vendas</div><div class="lp-meta-val">${NUM(g.vendas)}</div></div>
         <div><div class="lp-meta-lbl">Faturamento</div><div class="lp-meta-val">${g.vendas>0?BRL(g.fat):'—'}</div></div>
