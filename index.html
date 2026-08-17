@@ -1147,7 +1147,11 @@
     function renderVendas(){
       killCharts();
       const upd=()=>{ const u=document.getElementById('updated'); if(u) u.textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); };
-      const rows=(DATA.vendas||[]).filter(r=>inRange(r.date));
+      // A aba Vendas NÃO esconde o dia atual: gasto E venda vêm na MESMA linha da
+      // planilha "Vendas" (sem o lag que estoura o CPA nas abas do workshop, onde a
+      // venda é lançada depois na MÉTRICAS). Por isso não aplica o teto d>ontem().
+      const inRangeV = d => (!fStart||d>=fStart) && (!fEnd||d<=fEnd) && d>=cutoff();
+      const rows=(DATA.vendas||[]).filter(r=>inRangeV(r.date));
       if(!rows.length){ document.getElementById('body').innerHTML='<div class="empty">Sem dados de vendas no período</div>'; upd(); return; }
       const g=vAgg(rows);
       const cot=(DATA.metas&&DATA.metas.cotacao)||5.16;   // Investimento vem em US$ (conta Meta)
