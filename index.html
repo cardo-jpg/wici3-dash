@@ -1195,10 +1195,11 @@
       h+=`<div class="lbl">Detalhe por ${glabel} (${list.length})</div>
         <div class="vgsel">${gb('criativo','Criativo')}${gb('campanha','Campanha')}${gb('publico','Público')}</div>
         <div class="twrap"><table><thead><tr>
-        ${sortTh('vendas','k',glabel,1)}${sortTh('vendas','inv','Investido')}${sortTh('vendas','imp','Impr.')}${sortTh('vendas','ctr','CTR')}${sortTh('vendas','clk','Cliques')}${sortTh('vendas','vis','Visitas')}${sortTh('vendas','cart','Add Cart')}${sortTh('vendas','chk','Checkout')}${sortTh('vendas','vendas','Vendas')}${sortTh('vendas','cpa','CPA')}${sortTh('vendas','fat','Fat.')}${sortTh('vendas','roas','ROAS')}<th>Link</th>
+        ${sortTh('vendas','k',glabel,1)}<th>Status</th>${sortTh('vendas','inv','Investido')}${sortTh('vendas','imp','Impr.')}${sortTh('vendas','ctr','CTR')}${sortTh('vendas','clk','Cliques')}${sortTh('vendas','vis','Visitas')}${sortTh('vendas','cart','Add Cart')}${sortTh('vendas','chk','Checkout')}${sortTh('vendas','vendas','Vendas')}${sortTh('vendas','cpa','CPA')}${sortTh('vendas','fat','Fat.')}${sortTh('vendas','roas','ROAS')}<th>Link</th>
       </tr></thead><tbody>`;
+      const vtype='v'+vendasGroup;   // namespace de status próprio da aba Vendas (não colide c/ workshop)
       for(const o of list){
-        h+=`<tr><td title="${o.k}">${o.k}</td><td>${BRL(o.inv)}</td><td>${NUM(o.imp)}</td><td>${PCT(o.ctr)}</td><td>${NUM(o.clk)}</td><td>${NUM(o.vis)}</td><td>${NUM(o.cart)}</td><td>${NUM(o.chk)}</td><td>${NUM(o.vendas)}</td><td>${o.vendas>0?BRL(o.cpa):'—'}</td><td>${o.vendas>0?BRL(o.fat):'—'}</td><td>${o.vendas>0?RS(o.roas):'—'}</td><td>${o.link?`<a class="vlink" href="${o.link}" target="_blank">🔗</a>`:'—'}</td></tr>`;
+        h+=`<tr><td title="${o.k}">${o.k}</td><td>${stBadgeClk(vtype,o.k,'ACTIVE')}</td><td>${BRL(o.inv)}</td><td>${NUM(o.imp)}</td><td>${PCT(o.ctr)}</td><td>${NUM(o.clk)}</td><td>${NUM(o.vis)}</td><td>${NUM(o.cart)}</td><td>${NUM(o.chk)}</td><td>${NUM(o.vendas)}</td><td>${o.vendas>0?BRL(o.cpa):'—'}</td><td>${o.vendas>0?BRL(o.fat):'—'}</td><td>${o.vendas>0?RS(o.roas):'—'}</td><td>${o.link?`<a class="vlink" href="${o.link}" target="_blank">🔗</a>`:'—'}</td></tr>`;
       }
       h+=`</tbody></table></div>`;
       document.getElementById('body').innerHTML=h;
