@@ -589,10 +589,9 @@
       // ── Frentes do lançamento (verba separada por objetivo) ──
       const LEMBRETE_META=6250;   // verba de lembrete, à parte dos R$87,75k de ingresso
       h+=`<div class="lbl">Frentes do Lançamento — verba separada por objetivo</div><div class="grid">`;
-      h+=card('🎟️ Ingresso · Workshop', BRL(byBucket.ingresso), 'hl v', 'Meta: '+BRLk(m.investimento), PCT(div(byBucket.ingresso,m.investimento)*100)+' da verba')
-        +card('🔔 Lembrete', BRL(byBucket.lembrete), '', 'Verba à parte: '+BRLk(LEMBRETE_META), PCT(div(byBucket.lembrete,LEMBRETE_META)*100)+' usado')
-        +card('🎓 Mentoria', BRL(byBucket.mentoria), '', 'produto separado', 'ver aba Vendas')
-        +card('👁️ Visitas · Topo', BRL(byBucket.visitas), '', 'reconhecimento');
+      h+=card('🎟️ Ingresso · Workshop', BRLk(byBucket.ingresso), 'accent', 'Meta: '+BRLk(m.investimento), PCT(div(byBucket.ingresso,m.investimento)*100)+' da verba')
+        +card('🔔 Lembrete', BRLk(byBucket.lembrete), '', 'Verba à parte: '+BRLk(LEMBRETE_META), PCT(div(byBucket.lembrete,LEMBRETE_META)*100)+' usado')
+        +card('🎓 Mentoria', BRLk(byBucket.mentoria), '', 'produto separado', 'ver aba Vendas');
       h+=`</div>`;
 
       // ── 1) Tráfego · Ads (Meta Ads) ──
