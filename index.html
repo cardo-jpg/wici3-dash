@@ -270,13 +270,22 @@
       return null;
     };
 
+    // Frente da campanha (verba separada por objetivo): lembrete e mentoria têm meta
+    // própria e NÃO entram nos KPIs do lançamento de ingresso. Default = ingresso.
+    function bucketOf(camp){
+      const U=(camp||'').toUpperCase();
+      if(U.includes('LEMBRETE')) return 'lembrete';
+      if(U.includes('MENTORIA')) return 'mentoria';
+      if(U.includes('VISITA'))   return 'visitas';
+      return 'ingresso';
+    }
     function metaRows(table){
       const out=[];
       for(const r of (table.rows||[])){
         const c=r.c||[]; const d=cDate(c[0]); if(!d||d<START) continue;
         out.push({ date:d, campanha:cStr(c[1]), adset:cStr(c[2]), cost:cNum(c[3]), impressions:cNum(c[4]), reach:cNum(c[5]),
           clicks:cNum(c[6]), pageview:cNum(c[7]), ic:cNum(c[8]), compras:cNum(c[9]),
-          link:cStr(c[10]), anuncio:cStr(c[11]), faturamento:cNum(c[12]), status:cStr(c[13]) });
+          link:cStr(c[10]), anuncio:cStr(c[11]), faturamento:cNum(c[12]), status:cStr(c[13]), bucket:bucketOf(cStr(c[1])) });
       }
       return out;
     }
@@ -519,7 +528,12 @@
       killCharts();
       const mrows = (profile==='malu'?DATA.malu:profile==='hire'?DATA.hire:DATA.malu.concat(DATA.hire)).filter(r=>inRange(r.date));
       const urows = (profile==='malu'?DATA.umalu:profile==='hire'?DATA.uhire:DATA.umalu.concat(DATA.uhire)).filter(r=>inRange(r.date));
-      const k=metaAgg(mrows), m=DATA.metas;
+      // Verba por frente: lembrete e mentoria têm meta própria e não poluem o CPA/
+      // investido do lançamento de ingresso. Os KPIs abaixo usam só INGRESSO.
+      const launchRows = mrows.filter(r=>r.bucket==='ingresso');
+      const byBucket = {ingresso:0,lembrete:0,mentoria:0,visitas:0};
+      for(const r of mrows){ byBucket[r.bucket]=(byBucket[r.bucket]||0)+r.cost; }
+      const k=metaAgg(launchRows), m=DATA.metas;
       const leads=urows.length;
 
       // dias
@@ -572,6 +586,15 @@
              paceOf(k.investido, m.investimento, rInv, BRLk, '✓ verba usada'), 'Disponível: '+BRLk(_disp));
       h+=`</div>`;
 
+      // ── Frentes do lançamento (verba separada por objetivo) ──
+      const LEMBRETE_META=6250;   // verba de lembrete, à parte dos R$87,75k de ingresso
+      h+=`<div class="lbl">Frentes do Lançamento — verba separada por objetivo</div><div class="grid">`;
+      h+=card('🎟️ Ingresso · Workshop', BRL(byBucket.ingresso), 'hl v', 'Meta: '+BRLk(m.investimento), PCT(div(byBucket.ingresso,m.investimento)*100)+' da verba')
+        +card('🔔 Lembrete', BRL(byBucket.lembrete), '', 'Verba à parte: '+BRLk(LEMBRETE_META), PCT(div(byBucket.lembrete,LEMBRETE_META)*100)+' usado')
+        +card('🎓 Mentoria', BRL(byBucket.mentoria), '', 'produto separado', 'ver aba Vendas')
+        +card('👁️ Visitas · Topo', BRL(byBucket.visitas), '', 'reconhecimento');
+      h+=`</div>`;
+
       // ── 1) Tráfego · Ads (Meta Ads) ──
       h+=`<div class="lbl">Tráfego · Ads (Meta Ads)</div><div class="grid">`;
       h+=card('Investimento Total', BRL(k.investido), 'hl v', 'Previsto: '+BRLk(m.investimento), 'Taxa investida '+PCT(div(k.investido,m.investimento)*100))
@@ -613,7 +636,7 @@
 
       // Charts — vendas Orgânico (verde) + Ads (roxo) empilhadas + investido/dia (linha). Só dias com dado.
       const invByDay={};
-      for(const r of mrows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
+      for(const r of launchRows){ const kd=dkey(r.date); invByDay[kd]=(invByDay[kd]||0)+r.cost; }
       // Vendas Ads/dia: número real da planilha, rateado pro perfil selecionado.
       const pagoByDay = adsByDay(mrows);
       const orgByDay={}; ((DATA.metricas&&DATA.metricas.series)||[]).forEach(s=>{ const v=Math.max(0, s.paceDia||0); if(v>0) orgByDay[dkey(s.date)]=v; });
