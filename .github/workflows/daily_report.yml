@@ -1,0 +1,24 @@
+name: Relatório Diário WICI3 (Discord)
+
+on:
+  schedule:
+    - cron: '0 13 * * *'    # 10:00 BRT (UTC-3) — fechamento do dia anterior
+  workflow_dispatch:         # botão pra rodar na mão pelo GitHub
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install requests pytz
+
+      - name: Enviar relatório
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python report.py
